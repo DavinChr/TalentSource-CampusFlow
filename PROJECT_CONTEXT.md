@@ -105,5 +105,5 @@ CampusFlow memerlukan tiga server MCP independen yang saling terisolasi dan berk
 | **Fase 6** | **Guardrails & Uji Keamanan** | Penegakan invariant keamanan, pencegahan halusinasi, isolasi transaksi, sanitasi input |
 | **Fase 7** | **Pengujian Otomatis Menyeluruh** | Pengujian Uji 1 sampai Uji 10 (Skenario sukses, bentrok, alat rusak, error DB, error notifikasi, dll.) |
 | **Fase 8** | **Audit Akhir & Demonstrasi** | Demo kasus utama ("Pesan auditorium utama untuk workshop AI 100 orang..."), demo kasus gagal, `README.md`, laporan audit akhir |
-
+  
 ---
