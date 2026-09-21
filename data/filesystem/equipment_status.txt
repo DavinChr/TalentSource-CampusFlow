@@ -1,0 +1,16 @@
+# CampusFlow — Status Operasional Peralatan (Ringkasan)
+# Format: KODE_ALAT | STATUS | Terakhir Diperbarui | Catatan Singkat
+# Status: OPERATIONAL | UNDER_MAINTENANCE | FAULTY | DECOMMISSIONED | UNKNOWN
+# File ini diperbarui oleh tim TI setelah setiap sesi inspeksi/servis.
+# ===============================================================================
+
+PRJ-01 | OPERATIONAL       | 2026-09-15 | Lampu baru dipasang. Siap pakai penuh.
+PRJ-02 | UNDER_MAINTENANCE | 2026-09-10 | LCD panel retak. Menunggu suku cadang. JANGAN GUNAKAN.
+PRJ-03 | OPERATIONAL       | 2026-09-18 | Lulus uji pra-acara. Brightness dan fokus baik.
+PRJ-04 | FAULTY            | 2026-09-19 | Konektor HDMI rusak. Tidak dapat sinyal digital. Belum dijadwalkan servis.
+MIC-01 | OPERATIONAL       | 2026-09-12 | Baterai baru. Sinyal wireless kuat.
+MIC-02 | OPERATIONAL       | 2026-09-01 | Kabel dan kapsul baik.
+MIC-03 | OPERATIONAL       | 2026-09-05 | Baterai diganti. Lavalier berfungsi.
+SND-01 | OPERATIONAL       | 2026-09-20 | Kalibrasi selesai. Siap untuk acara penuh.
+SND-02 | OPERATIONAL       | 2026-09-08 | Portable speaker berfungsi normal.
+SBD-01 | OPERATIONAL       | 2026-09-14 | Firmware diperbarui. Layar sentuh responsif.

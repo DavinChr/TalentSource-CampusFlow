@@ -1,0 +1,24 @@
+# CampusFlow — Catatan Pemeliharaan & Servis Peralatan
+# Format: [YYYY-MM-DD] KODE_ALAT | STATUS | Keterangan. Teknisi: Nama.
+# Status valid: OPERATIONAL | UNDER_MAINTENANCE | FAULTY | DECOMMISSIONED
+# =============================================================================
+
+[2026-09-15] PRJ-01 | STATUS: OPERATIONAL | Inspeksi rutin bulanan selesai dilakukan. Lampu proyektor diganti dengan unit baru (jam pemakaian: 4800h). Lensa dibersihkan. Filter udara diganti. Tidak ada catatan kerusakan aktif. Siap operasional penuh. Teknisi: Ahmad Fauzi (TI Pusat). Catatan: Estimasi penggantian lampu berikutnya dalam 6 bulan.
+
+[2026-09-10] PRJ-02 | STATUS: UNDER_MAINTENANCE | LCD panel mengalami keretakan akibat benturan fisik saat pemindahan peralatan. Gambar tidak dapat ditampilkan dengan sempurna, terdapat dead pixels di bagian kiri atas layar proyeksi. Menunggu kedatangan suku cadang panel pengganti dari distributor resmi (Epicom). ETA pengiriman: 2 minggu. Unit sementara tidak dapat digunakan untuk kegiatan apapun. PIC: Tim TI Pusat — Budi Santoso (08123456789). JANGAN digunakan untuk acara selama masa perbaikan.
+
+[2026-09-18] PRJ-03 | STATUS: OPERATIONAL | Uji coba pra-acara untuk Seminar Nasional berhasil dilakukan. Proyektor menyala normal, fokus tajam, koneksi HDMI dan VGA stabil. Tidak ada dead pixel. Brightness 4000 lumen terkonfirmasi. Teknisi: Hendra Saputra (TI Multimedia). Catatan: Lampu masih 60% lifetime, estimasi penggantian 4 bulan lagi.
+
+[2026-09-19] PRJ-04 | STATUS: FAULTY | Ditemukan kerusakan pada konektor HDMI input — pin 13 dan 14 bengkok dan tidak terhubung sempurna. Proyektor dapat menyala namun tidak dapat menerima sinyal HDMI. Koneksi VGA masih berfungsi namun resolusi terbatas 1024x768. Tidak memenuhi standar untuk presentasi berkualitas tinggi. UNIT DALAM DAFTAR TUNGGU PERBAIKAN. Belum dijadwalkan servis karena antrean bengkel. Teknisi pelapor: Dian Kurniawan. Catatan: Status DB belum diperbarui — harap perbarui status DB setelah konfirmasi perbaikan selesai.
+
+[2026-09-12] MIC-01 | STATUS: OPERATIONAL | Baterai rechargeable diganti dengan unit baru. Uji sinyal wireless pada frekuensi 634 MHz — kuat dan tanpa interferensi. Jangkauan wireless terkonfirmasi 30 meter. Kotak penyimpanan dan charger dalam kondisi baik. Teknisi: Rizal Maulana (TI Pusat). Siap operasional untuk acara besar.
+
+[2026-09-01] MIC-02 | STATUS: OPERATIONAL | Kabel XLR diperiksa, tidak ada kerusakan pada shielding. Kapsul mikrofon dibersihkan dari debu. Uji rekaman sampel — frekuensi respons normal 20Hz-20kHz. Teknisi: Ahmad Fauzi. Tidak ada catatan masalah.
+
+[2026-09-05] MIC-03 | STATUS: OPERATIONAL | Inspeksi rutin. Bodypack transmitter dan lavalier mikrofon berfungsi normal. Baterai AA diganti. Teknisi: Ahmad Fauzi. Siap digunakan.
+
+[2026-09-20] SND-01 | STATUS: OPERATIONAL | Kalibrasi lengkap sistem audio auditorium selesai. Speaker subwoofer dan tweeter berfungsi normal di semua frekuensi. Pengujian volume maksimum (110 dB SPL) tanpa distorsi. Amplifier berfungsi penuh. Semua kabel snake dan rack mount diperiksa — tidak ada yang kendur. Teknisi: Rudi Hartono (Audio Specialist eksternal). Sistem siap untuk acara kapasitas penuh.
+
+[2026-09-08] SND-02 | STATUS: OPERATIONAL | Portable speaker diperiksa dan berfungsi normal. Koneksi Bluetooth, XLR, dan TRS tersedia dan berfungsi. Baterai internal terisi penuh. Teknisi: Ahmad Fauzi.
+
+[2026-09-14] SBD-01 | STATUS: OPERATIONAL | Smartboard Samsung Flip dikalibrasi ulang. Layar sentuh responsif di semua titik. Koneksi WiFi dan HDMI berfungsi. Perangkat lunak diperbarui ke versi firmware terbaru 3.2.1. Teknisi: Hendra Saputra.

@@ -1,0 +1,14 @@
+# CampusFlow — Inventaris Peralatan Kampus Lengkap
+# Format: KODE | Nama Lengkap | No. Seri | Lokasi Utama | Tahun Perolehan | Nilai Aset (IDR)
+# =====================================================================================
+
+PRJ-01 | Proyektor Epson EB-L615U         | SN:EP2024-001 | SR-101 (Seminar 101)        | 2024 | 28.500.000
+PRJ-02 | Proyektor BenQ LU930             | SN:BQ2023-002 | SR-102 (Seminar 102)        | 2023 | 24.000.000
+PRJ-03 | Proyektor ViewSonic PA503X       | SN:VS2022-003 | AUD-01 (Auditorium Utama)   | 2022 | 18.750.000
+PRJ-04 | Proyektor Panasonic PT-MZ570     | SN:PN2024-004 | LH-201 (Kuliah 201)         | 2024 | 32.000.000
+MIC-01 | Mikrofon Wireless Shure ULXD2    | SN:SH2024-001 | AUD-01 (Auditorium Utama)   | 2024 |  8.200.000
+MIC-02 | Mikrofon Kabel Audio-Technica AT4022 | SN:AT2023-001 | SR-101 (Seminar 101)    | 2023 |  3.500.000
+MIC-03 | Mikrofon Clip-On Sennheiser EW100 | SN:SE2024-001 | SR-ENG1 (Seminar Teknik)  | 2024 |  6.800.000
+SND-01 | Sound System JBL PRX812W         | SN:JB2021-001 | AUD-01 (Auditorium Utama)   | 2021 | 45.000.000
+SND-02 | Sound System Yamaha DXR10mkII    | SN:YM2023-001 | LH-202 (Kuliah 202)         | 2023 | 12.500.000
+SBD-01 | Smartboard Samsung Flip WM85B    | SN:SM2024-001 | CR-301 (Konferensi Eksekutif)| 2024 | 38.000.000
