@@ -85,5 +85,13 @@ scratch/
 tmp/
 temp/
 
-# Prompt
-prompts/
+# Prompt & Agents
+.prompts/
+**/.prompts/
+.agents/
+**/.agents/
+
+# Documentation markdown files
+docs/*.md
+docs/**/*.md
+
