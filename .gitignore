@@ -91,7 +91,4 @@ temp/
 .agents/
 **/.agents/
 
-# Documentation markdown files
-docs/*.md
-docs/**/*.md
 

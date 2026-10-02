@@ -18,10 +18,21 @@ Sistem ini **bukan sekadar chatbot biasa**, melainkan sebuah **agen alur kerja o
 
 ## 2. Kondisi Repositori Saat Ini
 - **Direktori Utama Proyek:** `D:\TalentSource\CampusFlow`
-- **File yang Ada:**
-  - `prompts/00_MASTER_PROMPT.md`: Dokumen acuan utama spesifikasi dan panduan fase pengerjaan.
-- **Status Repositori:** Proyek baru (*green-field*). Tidak ada kode warisan atau struktur usang yang bentrok.
-- **Manajemen Versi:** Berada di repositori Git lokal pada cabang `master`.
+- **Manajemen Versi:** Git repository terhubung ke GitHub `https://github.com/DavinChr/TalentSource-CampusFlow.git` pada cabang `main`.
+- **Struktur Berkas Utama Saat Ini:**
+  - `prompts/00_MASTER_PROMPT.md`: Dokumen acuan spesifikasi dan panduan 8 fase pengerjaan.
+  - `docs/`:
+    - `SRS_CampusFlow.md`: Dokumen Spesifikasi Kebutuhan Perangkat Lunak formal standar IEEE 830-1998 / ISO/IEC/IEEE 29148:2018 (Dokumen ID: `CF-SRS-2026-001`, Draft, 26 September 2026, Penulis: Joseph Davin).
+    - `Software Requirements Specification (SRS) - Campus Flow.pdf`: Dokumen PDF formal bersampul dan bernomor halaman terstruktur.
+    - Dokumen Desain Sistem: `architecture.md`, `architecture-decisions.md`, `data-model.md`, `mcp-architecture.md`, `problem-definition.md`, `research.md`, `state-machine.md`, `workflow.md`, `campusflow_overview.md`.
+  - `data/database/`:
+    - `schema.sql`: DDL 6 tabel utama (`buildings`, `rooms`, `equipment`, `room_equipment`, `users`, `bookings`, `audit_logs`) lengkap dengan batasan integritas referensial dan indeks pencarian.
+    - `seed.sql`: Data awal realistis untuk 3 gedung, 8 ruangan, 10 perangkat, dan 5 reservasi awal untuk menguji 10 skenario pengujian.
+    - `init_db.py`: Skrip inisialisasi basis data idempoten dan pengujian integritas 13 poin (*13-point verification test*).
+  - `data/filesystem/`:
+    - `equipment_inventory.txt`: Data inventaris aset perangkat kampus.
+    - `equipment_status.txt`: Catatan status operasional peralatan secara riil.
+    - `maintenance_logs.txt`: Log pemeliharaan berkala untuk pengujian skenario bentrok dan status peralatan.
 
 ---
 
@@ -80,30 +91,47 @@ CampusFlow memerlukan tiga server MCP independen yang saling terisolasi dan berk
 
 ---
 
-## 6. Komponen yang Perlu Dibangun
-1. **Infrastruktur Lingkungan:** Virtual environment (`.venv`) serta file dependensi (`requirements.txt` / `pyproject.toml`).
-2. **Dokumentasi Lengkap:** Folder `docs/` (`research.md`, `problem-definition.md`, `architecture-decisions.md`, `architecture.md`, `workflow.md`, `state-machine.md`, `data-model.md`, `mcp-database.md`, `mcp-filesystem.md`, `mcp-notification.md`, `testing.md`).
-3. **Lapisan Database:** Skema SQLite (`buildings`, `rooms`, `equipment`, `room_equipment`, `bookings`, `audit_logs`), data awal (*seed data*) realistis yang mencakup skenario bentrok jadwal dan masalah pemeliharaan alat.
-4. **File Operasional Kampus:** Catatan pemeliharaan dan inventaris peralatan di `data/filesystem/`.
-5. **Server MCP:** Tiga server mandiri (`mcp_db_server.py`, `mcp_fs_server.py`, `mcp_notification_server.py`).
-6. **Orkestrator Agen:** Alur kerja graf status LangGraph dengan guardrail deterministik dan pencatatan jejak eksekusi (*audit trail*).
-7. **Suite Uji Otomatis:** 10 skenario pengujian mencakup skenario sukses, ruangan tidak tersedia, kapasitas kurang, proyektor rusak, status tidak diketahui, kegagalan DB, kegagalan notifikasi, informasi bertentangan, permintaan ambigu, dan reservasi duplikat.
-8. **Antarmuka CLI & Demo:** Skrip eksekusi interaktif untuk mendemonstrasikan kasus penggunaan utama.
+## 6. Status Komponen & Progres Pengerjaan
+
+### Komponen yang Telah Selesai Dibangun:
+1. **Dokumentasi Spesifikasi Kebutuhan Formal (IEEE 830-1998 / ISO/IEC/IEEE 29148:2018):**
+   - Berkas: `docs/SRS_CampusFlow.md` dan `docs/Software Requirements Specification (SRS) - Campus Flow.pdf` (Dokumen ID: `CF-SRS-2026-001`, Draft, 26 September 2026, Penulis: Joseph Davin).
+   - Memuat 7 bab standar: Pengantar, Deskripsi Umum, Antarmuka Eksternal, Kebutuhan Sistem & Fungsional (dengan Mermaid ERD tervalidasi dan Kamus Data), Kebutuhan Non-Fungsional, Matriks Keterlacakan (RTM), serta Rencana Verifikasi & Validasi (10 Skenario Uji).
+2. **Dokumentasi Riset & Desain Arsitektur Sistem:**
+   - `docs/research.md`, `docs/problem-definition.md`, `docs/architecture-decisions.md` (ADR).
+   - `docs/architecture.md`, `docs/workflow.md`, `docs/state-machine.md`, `docs/data-model.md`, `docs/mcp-architecture.md`.
+3. **Lapisan Basis Data (Fase 3 - Selesai & Terverifikasi):**
+   - Skema DDL: `data/database/schema.sql` (6 tabel: `buildings`, `rooms`, `equipment`, `room_equipment`, `users`, `bookings`, `audit_logs`).
+   - Data Benih (*Seed Data*): `data/database/seed.sql` (3 gedung, 8 ruangan, 10 alat, 5 reservasi awal mencakup semua kasus uji bentrok dan kegagalan alat).
+   - Skrip Verifikasi: `data/database/init_db.py` (Lolos seluruh 13/13 pengujian integritas, ACID, foreign keys, indeks, dan deteksi konflik tumpang tindih waktu).
+4. **Berkas Operasional Filesystem (Fase 3 - Selesai):**
+   - `data/filesystem/equipment_inventory.txt`, `data/filesystem/equipment_status.txt`, `data/filesystem/maintenance_logs.txt`.
+
+### Komponen Berikutnya yang Akan Dibangun:
+1. **Infrastruktur Server MCP (Fase 4 - Siap Dikerjakan):**
+   - `mcp_db_server.py`: Server MCP Database via *stdio* (`inspect_schema`, `query_room_availability`, dll.).
+   - `mcp_fs_server.py`: Server MCP Filesystem via *stdio* (`read_file`, `search_maintenance_log`, dll.).
+   - `mcp_notification_server.py`: Server MCP Mock API Notifikasi Departemen via *stdio*.
+2. **Orkestrasi Alur Kerja Agen LangGraph (Fase 5):** Graf status, simpul ReAct, pengurai NLU, pencatat jejak audit.
+3. **Guardrails & Keamanan Deterministik (Fase 6):** Penegakan batasan keamanan dan invariant data.
+4. **Pengujian Otomatis 10 Skenario (Fase 7):** Pengujian pytest terisolasi dari Uji 1 hingga Uji 10.
+5. **Antarmuka CLI & Skenario Demo (Fase 8):** Skrip demonstrasi CLI interaktif dan audit akhir.
 
 ---
 
 ## 7. Rencana Eksekusi Berdasarkan Fase
 
-| Fase | Deskripsi | Hasil Keluaran (*Deliverables*) |
-|---|---|---|
-| **Fase 0** | **Inisialisasi Proyek (SELESAI)** | Audit lingkungan & repositori, `PROJECT_CONTEXT.md`, rencana kerja |
-| **Fase 1** | **Riset & Brainstorming** | `docs/research.md`, `docs/problem-definition.md`, `docs/architecture-decisions.md` |
-| **Fase 2** | **Desain Sistem Arsitektur** | `docs/architecture.md`, `docs/workflow.md`, `docs/state-machine.md`, `docs/data-model.md`, `docs/mcp-architecture.md` (dengan diagram Mermaid) |
-| **Fase 3** | **Database & Data Uji (Seed Data)** | Skema SQLite, skrip inisialisasi, data simulasi ruangan & alat, kueri transaksi reservasi |
-| **Fase 4** | **Infrastruktur Server MCP** | Server MCP Database, Filesystem, Notifikasi Mock API, serta dokumen panduan masing-masing MCP |
-| **Fase 5** | **Orkestrasi Agen (LangGraph)** | Graf alur kerja LangGraph, fungsi simpul (*nodes*), pengurai permintaan, pencatat jejak eksekusi |
-| **Fase 6** | **Guardrails & Uji Keamanan** | Penegakan invariant keamanan, pencegahan halusinasi, isolasi transaksi, sanitasi input |
-| **Fase 7** | **Pengujian Otomatis Menyeluruh** | Pengujian Uji 1 sampai Uji 10 (Skenario sukses, bentrok, alat rusak, error DB, error notifikasi, dll.) |
-| **Fase 8** | **Audit Akhir & Demonstrasi** | Demo kasus utama ("Pesan auditorium utama untuk workshop AI 100 orang..."), demo kasus gagal, `README.md`, laporan audit akhir |
-  
+| Fase | Deskripsi | Status | Hasil Keluaran (*Deliverables*) |
+|---|---|---|---|
+| **Fase 0** | **Inisialisasi Proyek** | **SELESAI** | Audit lingkungan & repositori, `PROJECT_CONTEXT.md`, struktur git |
+| **Fase 1** | **Riset & Brainstorming** | **SELESAI** | `docs/research.md`, `docs/problem-definition.md`, `docs/architecture-decisions.md` |
+| **Fase 2** | **Desain Sistem Arsitektur & SRS** | **SELESAI** | Dokumen SRS IEEE (`docs/SRS_CampusFlow.md`, `docs/Software Requirements Specification (SRS) - Campus Flow.pdf`), `docs/architecture.md`, `docs/workflow.md`, `docs/state-machine.md`, `docs/data-model.md`, `docs/mcp-architecture.md` |
+| **Fase 3** | **Database & Data Uji (Seed Data)** | **SELESAI** | `data/database/schema.sql`, `data/database/seed.sql`, `data/database/init_db.py` (13/13 lolos), berkas operasional `data/filesystem/` |
+| **Fase 4** | **Infrastruktur Server MCP** | **SIAP DIKERJAKAN** | 3 Server MCP Python (`mcp_db_server.py`, `mcp_fs_server.py`, `mcp_notification_server.py`) dan pengujian protokol stdio |
+| **Fase 5** | **Orkestrasi Agen (LangGraph)** | Menunggu Fase 4 | Graf alur kerja LangGraph, simpul (*nodes*), pengurai permintaan, jejak audit |
+| **Fase 6** | **Guardrails & Uji Keamanan** | Menunggu Fase 5 | Penegakan invariant keamanan, pencegahan halusinasi, isolasi transaksi |
+| **Fase 7** | **Pengujian Otomatis Menyeluruh** | Menunggu Fase 6 | 10 Skenario pengujian otomatis end-to-end (`pytest`) |
+| **Fase 8** | **Audit Akhir & Demonstrasi** | Menunggu Fase 7 | Demo CLI kasus utama & kasus gagal, `README.md`, laporan akhir |
+
 ---
+
