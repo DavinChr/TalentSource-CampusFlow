@@ -22,6 +22,9 @@ from typing import Any, Dict, List, Optional
 
 from mcp.server.mcpserver import MCPServer
 
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+OUTBOX_PATH = BASE_DIR / "data" / "filesystem" / "notifications_outbox.txt"
+
 server = MCPServer("campusflow-notification")
 
 # -----------------------------------------------------------------------------
@@ -112,9 +115,22 @@ def send_department_notification(
 
     _NOTIFICATIONS[notif_id] = entry
 
+    # Catat log notifikasi ke berkas fisik lokal agar transparan & dapat diaudit
+    try:
+        OUTBOX_PATH.parent.mkdir(parents=True, exist_ok=True)
+        log_line = (
+            f"[{now_iso}] ID: {notif_id} | TO: {DEPARTMENTS[dept_clean]['name']} <{DEPARTMENTS[dept_clean]['email']}> | "
+            f"SUBJ: {subject.strip()} | PAYLOAD: {json.dumps(payload, ensure_ascii=False)}\n"
+        )
+        with open(OUTBOX_PATH, "a", encoding="utf-8") as f:
+            f.write(log_line)
+    except Exception:
+        pass
+
     return {
         "status": "SENT",
         "notification_id": notif_id,
+        "department_key": dept_clean,
         "department": DEPARTMENTS[dept_clean]["name"],
         "sent_at": now_iso,
     }

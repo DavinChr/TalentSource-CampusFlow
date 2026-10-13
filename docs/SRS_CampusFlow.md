@@ -293,7 +293,7 @@ Sistem menentukan target departemen yang relevan secara otomatis berdasarkan kar
 1. Simpul otorisasi mengevaluasi atribut pemesanan yang telah dikonfirmasi.
 2. Aturan penentuan target dijalankan:
     - Ruangan manapun $\rightarrow$ Bagian Fasilitas Kampus (`academic_facilities`).
-    - Melibatkan proyektor / mikrofon / sound system $\rightarrow$ Tim TI & Multimedia (`it_multimedia`).
+    - Melibatkan proyektor / mikrofon / sound system $\rightarrow$ Tim TI & Multimedia (`it_support`).
     - Acara di luar jam kerja (setelah 18:00 atau akhir pekan) $\rightarrow$ Unit Keamanan Kampus (`campus_security`).
 3. Agen memanggil `send_department_notification` ke server `campusflow-notification` untuk setiap target departemen.
 4. Notifikasi disimpan sebagai dokumen JSON terstruktur.
@@ -607,7 +607,7 @@ Implementasi sistem dinyatakan memenuhi kepatuhan SRS ini apabila lulus seluruh 
 
 | No. Uji | Skenario | Kondisi Lingkungan | Masukan Pengguna | Hasil Akhir yang Diharapkan |
 | :---: | :--- | :--- | :--- | :--- |
-| **TC-01** | Jalur Sukses Penuh | Auditorium Utama kosong, kapasitas cukup, proyektor berfungsi | *"Pesan auditorium utama untuk workshop AI 100 orang pada 23 September 2026 jam 09:00 sampai 11:00, pastikan proyektor berfungsi."* | `CONFIRMED`, referensi `BK-YYYY-NNN`, notifikasi terkirim ke `academic_facilities` dan `it_multimedia`. |
+| **TC-01** | Jalur Sukses Penuh | Auditorium Utama kosong, kapasitas cukup, proyektor berfungsi | *"Pesan auditorium utama untuk workshop AI 100 orang pada 23 September 2026 jam 09:00 sampai 11:00, pastikan proyektor berfungsi."* | `CONFIRMED`, referensi `BK-YYYY-NNN`, notifikasi terkirim ke `academic_facilities` dan `it_support`. |
 | **TC-02** | Bentrok Jadwal | Ruang Seminar 101 telah terisi pada 09:00–11:00 | *"Pesan Ruang Seminar 101 untuk diskusi 15 orang pada 24 September 2026 jam 10:00 sampai 12:00."* | `CONFLICT_DETECTED`, tidak ada baris baru di tabel bookings, pemohon diberi tahu bentrok waktu. |
 | **TC-03** | Kapasitas Melampaui Batas | Ruang Konferensi 301 berkapasitas 20 orang | *"Pesan Ruang Konferensi 301 untuk rapat umum 50 orang pada 25 September 2026 jam 13:00 sampai 15:00."* | `CAPACITY_EXCEEDED`, permohonan ditolak sebelum pengecekan alat dijalankan. |
 | **TC-04** | Kontradiksi Bukti Fisik Alat | Proyektor PRJ-02 `ACTIVE` di DB, namun berkas log servis mencatat `UNDER_MAINTENANCE` | *"Pesan Ruang Seminar 102 untuk seminar 30 orang pada 26 September 2026 jam 14:00 sampai 16:00 dengan proyektor."* | `EQUIPMENT_FAULTY`, bukti fisik diutamakan, pemesanan dibatalkan. |
@@ -677,7 +677,7 @@ sequenceDiagram
     DB-->>AG: {status: "CREATED", booking_reference: "BK-2026-004"}
     AG->>NT: send_department_notification("academic_facilities", payload)
     NT-->>AG: {status: "SENT", notification_id: "N-2026-001"}
-    AG->>NT: send_department_notification("it_multimedia", payload)
+    AG->>NT: send_department_notification("it_support", payload)
     NT-->>AG: {status: "SENT", notification_id: "N-2026-002"}
     AG->>User: Konfirmasi Reservasi BK-2026-004 Berhasil
 ```
