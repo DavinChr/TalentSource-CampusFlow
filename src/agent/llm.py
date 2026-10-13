@@ -256,7 +256,7 @@ if __name__ == "__main__":
                     print(f"  - Peralatan : {', '.join(hasil.required_equipment)}")
                 if hasil.notes:
                     print(f"  - Catatan   : {hasil.notes}")
-                print("\n(Data siap divalidasi ke basis data tanpa mengirim notifikasi)")
+                print("\n(Data siap divalidasi ke basis data)")
 
                 conversation_history.append({"role": "user", "content": user_input})
                 conversation_history.append({"role": "assistant", "content": "Data pemesanan telah lengkap."})
