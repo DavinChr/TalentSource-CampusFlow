@@ -14,3 +14,38 @@ MIC-03 | OPERATIONAL       | 2026-09-05 | Baterai diganti. Lavalier berfungsi.
 SND-01 | OPERATIONAL       | 2026-09-20 | Kalibrasi selesai. Siap untuk acara penuh.
 SND-02 | OPERATIONAL       | 2026-09-08 | Portable speaker berfungsi normal.
 SBD-01 | OPERATIONAL       | 2026-09-14 | Firmware diperbarui. Layar sentuh responsif.
+PRJ-PPAG-AUD | OPERATIONAL       | 2026-10-01 | Dual Laser Barco 4K. Teruji prima.
+PRJ-PPAG-202 | OPERATIONAL       | 2026-10-01 | Proyektor ruang kelas PPAG 202 siap pakai.
+PRJ-G0-OR    | OPERATIONAL       | 2026-10-01 | Proyektor Operation Room siap pakai.
+PRJ-G9-AULA  | OPERATIONAL       | 2026-10-01 | Proyektor Aula Driekore lulus uji.
+PRJ-G9-101   | OPERATIONAL       | 2026-10-01 | Proyektor Epson siap pakai.
+PRJ-G9-LAB1  | OPERATIONAL       | 2026-10-01 | Proyektor Lab Komputasi 1 siap pakai.
+PRJ-G9-LAB2  | OPERATIONAL       | 2026-10-01 | Proyektor Lab Komputasi 2 siap pakai.
+PRJ-G9-LAB3  | OPERATIONAL       | 2026-10-01 | Proyektor Lab Komputasi 3 siap pakai.
+PRJ-G2-MC    | OPERATIONAL       | 2026-10-01 | Proyektor Moot Court FH siap pakai.
+PRJ-G2-SEM   | OPERATIONAL       | 2026-10-01 | Proyektor Seminar FH siap pakai.
+SND-PPAG-AUD | OPERATIONAL       | 2026-10-01 | Line Array L-Acoustics prima.
+SND-PPAG-LT1 | OPERATIONAL       | 2026-10-01 | Yamaha sound system LT1 siap pakai.
+SND-PPAG-LT2 | OPERATIONAL       | 2026-10-01 | Yamaha sound system LT2 siap pakai.
+SND-PPAG-LT3 | OPERATIONAL       | 2026-10-01 | Yamaha sound system LT3 siap pakai.
+SND-PPAG-201 | OPERATIONAL       | 2026-10-01 | Sound system Lecture Hall siap pakai.
+SND-G0-OR    | OPERATIONAL       | 2026-10-01 | Bose FreeSpace siap pakai.
+SND-G9-AULA  | OPERATIONAL       | 2026-10-01 | JBL PRX Aula Driekore siap pakai.
+SND-G2-MC    | OPERATIONAL       | 2026-10-01 | Yamaha StagePas Moot Court siap pakai.
+SND-G2-SEM   | OPERATIONAL       | 2026-10-01 | JBL EON Seminar FH siap pakai.
+MIC-PPAG-AUD | OPERATIONAL       | 2026-10-01 | Shure Axient Digital baterai penuh.
+MIC-PPAG-LT1 | OPERATIONAL       | 2026-10-01 | Shure BLX24 siap pakai.
+MIC-PPAG-LT2 | OPERATIONAL       | 2026-10-01 | Shure BLX24 siap pakai.
+MIC-PPAG-LT3 | OPERATIONAL       | 2026-10-01 | Shure BLX24 siap pakai.
+MIC-PPAG-201 | OPERATIONAL       | 2026-10-01 | Sennheiser EW-D siap pakai.
+MIC-G0-OR    | OPERATIONAL       | 2026-10-01 | Bosch delegate mic siap pakai.
+MIC-G9-AULA  | OPERATIONAL       | 2026-10-01 | Shure SM58 siap pakai.
+MIC-G2-MC    | OPERATIONAL       | 2026-10-01 | Audio-Technica mic meja sidang siap pakai.
+MIC-G2-SEM   | OPERATIONAL       | 2026-10-01 | Sennheiser E835 siap pakai.
+SBD-PPAG-LT1 | OPERATIONAL       | 2026-10-01 | Samsung Flip Pro 85 LT1 siap pakai.
+SBD-PPAG-LT2 | OPERATIONAL       | 2026-10-01 | Samsung Flip Pro 85 LT2 siap pakai.
+SBD-PPAG-LT3 | OPERATIONAL       | 2026-10-01 | Samsung Flip Pro 85 LT3 siap pakai.
+SBD-PPAG-201 | OPERATIONAL       | 2026-10-01 | Samsung Flip Pro 85 LH siap pakai.
+CMP-G9-LAB1  | OPERATIONAL       | 2026-10-01 | 30 unit PC siap pakai.
+CMP-G9-LAB2  | OPERATIONAL       | 2026-10-01 | 30 unit PC siap pakai.
+CMP-G9-LAB3  | OPERATIONAL       | 2026-10-01 | 60 unit PC siap pakai.

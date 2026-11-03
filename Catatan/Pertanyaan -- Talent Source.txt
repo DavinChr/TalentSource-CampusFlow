@@ -1,0 +1,8 @@
+Pertanyaan -- Talent Source
+
+"Jika pengguna memberikan instruksi yang kurang lengkap (misal: 'Pesan ruangan untuk workshop minggu depan' tanpa jam dan tanpa jumlah orang), perilaku apa yang diharapkan dari agen? Apakah cukup dengan Fast-Fail (menolak secara aman dengan daftar rincian info yang harus dilengkapi), ataukah sistem wajib mendukung percakapan interaktif bolak-balik (Human-in-the-Loop) di mana agen menanyakan kembali informasi yang hilang?
+
+"Pada skenario uji di mana penulisan database reservasi sukses, tetapi pengiriman notifikasi ke departemen gagal/timeout: apakah reservasi di database tetap dibiarkan CONFIRMED dengan status notifikasi FAILED (dan dicatat di audit log), ataukah sistem diharapkan melakukan kompensasi/antrean pengiriman ulang (retry queue)?"
+
+"Harus pake UI juga atau cukup CLI ?"
+

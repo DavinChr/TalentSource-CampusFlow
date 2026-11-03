@@ -292,7 +292,7 @@ def create_booking_transactional(
     start_time: str,
     end_time: str,
     attendee_count: int,
-    notes: str = "",
+    notes: Optional[str] = "",
     trace_id: str = "",
 ) -> Dict[str, Any]:
     """

@@ -1,0 +1,197 @@
+================================================================================
+ campus_rooms_unpar.txt
+ DAFTAR MASTER GEDUNG, RUANGAN, KAPASITAS, DAN FASILITAS KAMPUS UNPAR
+ Universitas Katolik Parahyangan (UNPAR) — Bandung
+================================================================================
+
+PETUNJUK PENGISIAN & KUSTOMISASI:
+1. Berkas ini dapat Anda edit secara langsung untuk menambah, mengubah, atau melengkapi
+   ruangan dan peralatan sesuai kondisi riil kampus UNPAR.
+2. Format setiap ruangan:
+   [KODE_RUANGAN]
+   Nama Ruangan   : <Nama Resmi Ruangan>
+   Gedung         : <Kode Gedung> - <Nama Gedung>
+   Lantai         : <Angka Lantai>
+   Tipe           : <auditorium | lecture_hall | seminar_room | conference_room | computer_lab | laboratory | multipurpose>
+   Kapasitas      : <Jumlah Kursi / Orang>
+   Status         : <ACTIVE | UNDER_RENOVATION | INACTIVE>
+   Peralatan      : <daftar alat dipisah koma: projector, sound_system, microphone, whiteboard, smartboard, computer, video_conferencing, air_conditioning>
+   Catatan Khusus : <keterangan tambahan tata letak / peruntukan>
+
+================================================================================
+1. DAFTAR MASTER GEDUNG (BUILDINGS)
+================================================================================
+[PPAG] Gedung Pusat Pembelajaran Arntz-Geise (PPAG 1 & 2) — Jl. Ciumbuleuit No. 94
+[G0]   Gedung 0 (Rektorat & Administrasi Pusat)          — Jl. Ciumbuleuit No. 94
+[G2]   Gedung 2 (Fakultas Hukum)                         — Jl. Ciumbuleuit No. 94
+[G3]   Gedung 3 (Fakultas Ilmu Sosial & Ilmu Politik)    — Jl. Ciumbuleuit No. 94
+[G8]   Gedung 8 (Fakultas Teknologi Rekayasa)            — Jl. Ciumbuleuit No. 94
+[G9]   Gedung 9 (Fakultas Ekonomi & Bisnis)              — Jl. Ciumbuleuit No. 94
+[G10]  Gedung 10 (Fakultas Sains)                        — Jl. Ciumbuleuit No. 94
+[PASCA]Gedung Pascasarjana UNPAR                         — Jl. Merdeka No. 30
+
+================================================================================
+2. DAFTAR DETAIL RUANGAN & FASILITAS
+================================================================================
+
+--------------------------------------------------------------------------------
+GEDUNG PPAG (Pusat Pembelajaran Arntz-Geise — PPAG 1 & 2)
+--------------------------------------------------------------------------------
+[PPAG-AUD]
+Nama Ruangan   : Auditorium Utama PPAG
+Gedung         : PPAG - Pusat Pembelajaran Arntz-Geise
+Lantai         : 2 dan 2A (PPAG 2)
+Tipe           : auditorium
+Kapasitas      : 800
+Status         : ACTIVE
+Peralatan      : projector (Dual Laser), sound_system (Line Array), microphone (Wireless Shure), lighting (Stage Rig), air_conditioning
+Catatan Khusus : Akustik kelas konser, panggung besar, cocok untuk wisuda, seminar internasional, dan konser musik.
+
+[PPAG-LT1]
+Nama Ruangan   : Lecture Theater 1 PPAG
+Gedung         : PPAG - Pusat Pembelajaran Arntz-Geise
+Lantai         : 12 (PPAG 2 Utara)
+Tipe           : lecture_hall
+Kapasitas      : 90
+Status         : ACTIVE
+Peralatan      : smartboard, sound_system, microphone, whiteboard, air_conditioning
+Catatan Khusus : Kursi bertingkat (theater-style) dengan meja lipat individual.
+
+[PPAG-LT2]
+Nama Ruangan   : Lecture Theater 2 PPAG
+Gedung         : PPAG - Pusat Pembelajaran Arntz-Geise
+Lantai         : 12 (PPAG 2 Utara)
+Tipe           : lecture_hall
+Kapasitas      : 90
+Status         : ACTIVE
+Peralatan      : smartboard, sound_system, microphone, whiteboard, air_conditioning
+Catatan Khusus : Kursi bertingkat untuk kelas diskusi interaktif dan kuliah tamu sedang.
+
+[PPAG-LT3]
+Nama Ruangan   : Lecture Theater 3 PPAG
+Gedung         : PPAG - Pusat Pembelajaran Arntz-Geise
+Lantai         : 12 (PPAG 2 Utara)
+Tipe           : lecture_hall
+Kapasitas      : 90
+Status         : ACTIVE
+Peralatan      : smartboard, sound_system, microphone, whiteboard, air_conditioning
+Catatan Khusus : Kursi bertingkat untuk kelas diskusi interaktif dan kuliah tamu sedang.
+
+[PPAG-201]
+Nama Ruangan   : Lacture Hall PPAG
+Gedung         : PPAG - Pusat Pembelajaran Arntz-Geise
+Lantai         : 9 (PPAG 2 Selatan)
+Tipe           : lecture_hall
+Kapasitas      : 160
+Status         : ACTIVE
+Peralatan      : smartboard besar, sound_system, microphone, air_conditioning
+Catatan Khusus : Kursi bertingkat untuk kelas diskusi interaktif dan kuliah tamu.
+
+[PPAG-202]
+Nama Ruangan   : Ruang Kuliah PPAG 202
+Gedung         : PPAG - Pusat Pembelajaran Arntz-Geise
+Lantai         : 4 - 6 (PPAG 2)
+Tipe           : lecture_hall
+Kapasitas      : 60
+Status         : ACTIVE
+Peralatan      : projector, whiteboard, air_conditioning
+Catatan Khusus : Layout standar perkuliahan sarjana.
+
+[PPAG-203]
+Nama Ruangan   : Ruang Multifungsi
+Gedung         : PPAG - Pusat Pembelajaran Arntz-Geise
+Lantai         : 1 (PPAG 2)
+Tipe           : MultiFungsi
+Kapasitas      : 300
+Status         : ACTIVE
+Peralatan      : by request
+Catatan Khusus : Layout di atur sendiri
+
+--------------------------------------------------------------------------------
+GEDUNG 0 (Rektorat & Kantor Pusat)
+--------------------------------------------------------------------------------
+[G0-OR]
+Nama Ruangan   : Operation Room Rektorat
+Gedung         : G0 - Gedung Rektorat
+Lantai         : 4
+Tipe           : conference_room
+Kapasitas      : 50
+Status         : ACTIVE
+Peralatan      : projector, microphone, sound_system, air_conditioning
+Catatan Khusus : Ruangan kosong belum ada kursi dan meja, hanya ada projector dan sound system saja yang sudah terpasang
+
+--------------------------------------------------------------------------------
+GEDUNG 9 (Fakultas Ekonomi & Bisnis)
+--------------------------------------------------------------------------------
+[G9-AULA]
+Nama Ruangan   : Aula Driekore (Aula FE)
+Gedung         : G9 - Gedung 9
+Lantai         : 4
+Tipe           : auditorium
+Kapasitas      : 250
+Status         : ACTIVE
+Peralatan      : projector, sound_system, microphone, air_conditioning, stage
+Catatan Khusus : Aula serbaguna untuk seminar mahasiswa, kuliah umum, dan pameran ekonomi.
+
+[G9-101]
+Nama Ruangan   : Ruang Kuliah 9101
+Gedung         : G9 - Gedung 9
+Lantai         : 1
+Tipe           : lecture_hall
+Kapasitas      : 60
+Status         : ACTIVE
+Peralatan      : projector, whiteboard, air_conditioning
+Catatan Khusus : Kelas reguler lantai dasar dekat lobi utama Gedung 9.
+
+[G9-LAB1]
+Nama Ruangan   : Laboratorium Komputer Komputasi Lanjut
+Gedung         : G9 - Gedung 9
+Lantai         : SB
+Tipe           : computer_lab
+Kapasitas      : 30
+Status         : ACTIVE
+Peralatan      : computer (30 Unit PC Core i7), projector, air_conditioning, whiteboard
+Catatan Khusus : Praktikum pemrograman, kecerdasan buatan, dan ujian berbasis komputer.
+
+[G9-LAB2]
+Nama Ruangan   : Laboratorium Komputer Komputasi Lanjut
+Gedung         : G9 - Gedung 9
+Lantai         : SB
+Tipe           : computer_lab
+Kapasitas      : 30
+Status         : ACTIVE
+Peralatan      : computer (30 Unit PC Core i7), projector, air_conditioning, whiteboard
+Catatan Khusus : Praktikum pemrograman, kecerdasan buatan, dan ujian berbasis komputer.
+
+[G9-LAB3]
+Nama Ruangan   : Laboratorium Komputer Komputasi Lanjut
+Gedung         : G9 - Gedung 9
+Lantai         : SB
+Tipe           : computer_lab
+Kapasitas      : 60
+Status         : ACTIVE
+Peralatan      : computer (60 Unit PC Core i7), projector, air_conditioning, whiteboard
+Catatan Khusus : Praktikum pemrograman, kecerdasan buatan, dan ujian berbasis komputer.
+
+--------------------------------------------------------------------------------
+GEDUNG 2 (Fakultas Hukum)
+--------------------------------------------------------------------------------
+[G2-MC]
+Nama Ruangan   : Ruang Peradilan Semu (Moot Court)
+Gedung         : G2 - Gedung 2
+Lantai         : 1
+Tipe           : seminar_room
+Kapasitas      : 50
+Status         : ACTIVE
+Peralatan      : microphone (Meja Hakim, Jaksa, Pembela), sound_system, projector, air_conditioning
+Catatan Khusus : Layout khusus ruang persidangan pengadilan dengan sekat pengunjung sidang.
+
+[G2-SEM]
+Nama Ruangan   : Ruang Seminar B. Arief Sidharta
+Gedung         : G2 - Gedung 2
+Lantai         : 2
+Tipe           : seminar_room
+Kapasitas      : 60
+Status         : ACTIVE
+Peralatan      : projector, sound_system, microphone, whiteboard, air_conditioning
+Catatan Khusus : Ruang seminar hukum dan ujian tesis/sidang skripsi terbuka.

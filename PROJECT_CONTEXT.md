@@ -127,9 +127,9 @@ CampusFlow memerlukan tiga server MCP independen yang saling terisolasi dan berk
 | **Fase 1** | **Riset & Brainstorming** | **SELESAI** | `docs/research.md`, `docs/problem-definition.md`, `docs/architecture-decisions.md` |
 | **Fase 2** | **Desain Sistem Arsitektur & SRS** | **SELESAI** | Dokumen SRS IEEE (`docs/SRS_CampusFlow.md`, `docs/Software Requirements Specification (SRS) - Campus Flow.pdf`), `docs/architecture.md`, `docs/workflow.md`, `docs/state-machine.md`, `docs/data-model.md`, `docs/mcp-architecture.md` |
 | **Fase 3** | **Database & Data Uji (Seed Data)** | **SELESAI** | `data/database/schema.sql`, `data/database/seed.sql`, `data/database/init_db.py` (13/13 lolos), berkas operasional `data/filesystem/` |
-| **Fase 4** | **Infrastruktur Server MCP** | **SIAP DIKERJAKAN** | 3 Server MCP Python (`mcp_db_server.py`, `mcp_fs_server.py`, `mcp_notification_server.py`) dan pengujian protokol stdio |
-| **Fase 5** | **Orkestrasi Agen (LangGraph)** | Menunggu Fase 4 | Graf alur kerja LangGraph, simpul (*nodes*), pengurai permintaan, jejak audit |
-| **Fase 6** | **Guardrails & Uji Keamanan** | Menunggu Fase 5 | Penegakan invariant keamanan, pencegahan halusinasi, isolasi transaksi |
+| **Fase 4** | **Infrastruktur Server MCP** | **SELESAI** | 3 Server MCP Python (`db_server.py`, `fs_server.py`, `notification_server.py`), pengujian integrasi multi-server (`test_mcp_integration.py` 2/2 lolos) |
+| **Fase 5** | **Orkestrasi Agen (LangGraph & Gemini LLM)** | **SELESAI** | Graf alur kerja LangGraph (`graph.py`), simpul terisolasi (`nodes/`), integrasi Google GenAI Gemini (`llm.py`), adaptasi Human-in-the-Loop, antarmuka CLI interaktif (`cli.py`), pengujian alur penuh (`test_agent_workflow.py` 5/5 lolos) |
+| **Fase 6** | **Guardrails & Uji Keamanan** | **SIAP DIKERJAKAN** | Penegakan invariant keamanan, pencegahan halusinasi, isolasi transaksi |
 | **Fase 7** | **Pengujian Otomatis Menyeluruh** | Menunggu Fase 6 | 10 Skenario pengujian otomatis end-to-end (`pytest`) |
 | **Fase 8** | **Audit Akhir & Demonstrasi** | Menunggu Fase 7 | Demo CLI kasus utama & kasus gagal, `README.md`, laporan akhir |
 

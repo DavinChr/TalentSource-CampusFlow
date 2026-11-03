@@ -12,3 +12,26 @@ MIC-03 | Mikrofon Clip-On Sennheiser EW100 | SN:SE2024-001 | SR-ENG1 (Seminar Te
 SND-01 | Sound System JBL PRX812W         | SN:JB2021-001 | AUD-01 (Auditorium Utama)   | 2021 | 45.000.000
 SND-02 | Sound System Yamaha DXR10mkII    | SN:YM2023-001 | LH-202 (Kuliah 202)         | 2023 | 12.500.000
 SBD-01 | Smartboard Samsung Flip WM85B    | SN:SM2024-001 | CR-301 (Konferensi Eksekutif)| 2024 | 38.000.000
+PRJ-PPAG-AUD | Proyektor Dual Laser Barco UDX-4K32 | SN:UNPAR-PRJ-001 | PPAG-AUD (Auditorium Utama) | 2024 | 150.000.000
+PRJ-PPAG-202 | Proyektor Epson EB-L615U | SN:UNPAR-PRJ-002 | PPAG-202 (Kelas 202) | 2023 | 25.000.000
+PRJ-G0-OR | Proyektor Panasonic PT-MZ570 | SN:UNPAR-PRJ-003 | G0-OR (Operation Room) | 2024 | 30.000.000
+PRJ-G9-AULA | Proyektor Sony VPL-FHZ75 | SN:UNPAR-PRJ-004 | G9-AULA (Aula Driekore) | 2023 | 45.000.000
+PRJ-G9-101 | Proyektor Epson EB-2250U | SN:UNPAR-PRJ-005 | G9-101 (Kelas 9101) | 2023 | 20.000.000
+PRJ-G9-LAB1 | Proyektor BenQ MH733 | SN:UNPAR-PRJ-006 | G9-LAB1 (Lab Komputasi 1) | 2024 | 15.000.000
+PRJ-G9-LAB2 | Proyektor BenQ MH733 | SN:UNPAR-PRJ-007 | G9-LAB2 (Lab Komputasi 2) | 2024 | 15.000.000
+PRJ-G9-LAB3 | Proyektor BenQ MH733 | SN:UNPAR-PRJ-008 | G9-LAB3 (Lab Komputasi 3) | 2024 | 15.000.000
+PRJ-G2-MC | Proyektor Epson EB-X500 | SN:UNPAR-PRJ-009 | G2-MC (Moot Court) | 2023 | 12.000.000
+PRJ-G2-SEM | Proyektor Panasonic PT-VMZ51 | SN:UNPAR-PRJ-010 | G2-SEM (Seminar FH) | 2024 | 22.000.000
+SND-PPAG-AUD | Line Array L-Acoustics Kiva II | SN:UNPAR-SND-001 | PPAG-AUD (Auditorium Utama) | 2024 | 200.000.000
+SND-PPAG-LT1 | Sound System Yamaha CBR12 | SN:UNPAR-SND-002 | PPAG-LT1 (Lecture Theater 1) | 2024 | 18.000.000
+SND-G0-OR | Sound System Bose FreeSpace | SN:UNPAR-SND-006 | G0-OR (Operation Room) | 2023 | 25.000.000
+SND-G9-AULA | Sound System JBL PRX812W | SN:UNPAR-SND-007 | G9-AULA (Aula Driekore) | 2022 | 40.000.000
+SND-G2-MC | Sound System Yamaha StagePas | SN:UNPAR-SND-008 | G2-MC (Moot Court) | 2023 | 15.000.000
+SND-G2-SEM | Sound System JBL EON615 | SN:UNPAR-SND-009 | G2-SEM (Seminar FH) | 2023 | 20.000.000
+MIC-PPAG-AUD | Wireless Shure Axient Digital | SN:UNPAR-MIC-001 | PPAG-AUD (Auditorium Utama) | 2024 | 45.000.000
+MIC-G0-OR | Microphone Delegate Bosch CCS 900 | SN:UNPAR-MIC-006 | G0-OR (Operation Room) | 2023 | 35.000.000
+MIC-G2-MC | Mic Meja Sidang Audio-Technica Pro 49Q | SN:UNPAR-MIC-008 | G2-MC (Moot Court) | 2023 | 12.000.000
+SBD-PPAG-LT1 | Smartboard Samsung Flip Pro 85 | SN:UNPAR-SBD-001 | PPAG-LT1 (Lecture Theater 1) | 2024 | 40.000.000
+CMP-G9-LAB1 | 30 Unit PC Dell OptiPlex 7090 Core i7 | SN:UNPAR-CMP-001 | G9-LAB1 (Lab Komputasi 1) | 2024 | 360.000.000
+CMP-G9-LAB2 | 30 Unit PC Dell OptiPlex 7090 Core i7 | SN:UNPAR-CMP-002 | G9-LAB2 (Lab Komputasi 2) | 2024 | 360.000.000
+CMP-G9-LAB3 | 60 Unit PC Dell OptiPlex 7090 Core i7 | SN:UNPAR-CMP-003 | G9-LAB3 (Lab Komputasi 3) | 2024 | 720.000.000

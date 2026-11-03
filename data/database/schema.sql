@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS rooms (
     room_name   TEXT    NOT NULL,
     room_type   TEXT    NOT NULL CHECK(room_type IN (
                     'auditorium', 'seminar_room', 'lecture_hall',
-                    'conference_room', 'computer_lab', 'laboratory'
+                    'conference_room', 'computer_lab', 'laboratory',
+                    'multipurpose', 'multifungsi'
                 )),
     capacity    INTEGER NOT NULL CHECK(capacity > 0),
     floor       INTEGER NOT NULL DEFAULT 1,
@@ -55,7 +56,7 @@ CREATE TABLE IF NOT EXISTS equipment (
     equipment_type  TEXT    NOT NULL CHECK(equipment_type IN (
                         'projector', 'microphone', 'sound_system',
                         'whiteboard', 'smartboard', 'computer',
-                        'video_conferencing', 'air_conditioning', 'lighting'
+                        'video_conferencing', 'air_conditioning', 'lighting', 'stage'
                     )),
     brand           TEXT,
     model           TEXT,

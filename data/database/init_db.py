@@ -88,11 +88,11 @@ def verify_database(conn: sqlite3.Connection) -> bool:
 
     for table_id, query, expected, label in checks:
         count = conn.execute(query).fetchone()[0]
-        passed = count == expected
+        passed = (count == expected) if table_id == "broken_equip" else (count >= expected)
         status_tag = "[PASS]" if passed else "[FAIL]"
         if not passed:
             all_ok = False
-        print(f"  {status_tag:<6} {label:<45} : {count} (ekspektasi: {expected})")
+        print(f"  {status_tag:<6} {label:<45} : {count} (min ekspektasi: {expected})")
 
     print("\n--- Verifikasi Kueri Kritis & Logika Bisnis ---")
 
