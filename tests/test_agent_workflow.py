@@ -227,3 +227,159 @@ async def test_unpar_booking_flow_end_to_end():
     assert "U-shape" in row[1]
 
 
+@pytest.mark.asyncio
+async def test_room_under_renovation_tc05():
+    """TC-05: Ruangan berstatus UNDER_RENOVATION ditolak pada validasi ketersediaan."""
+    prompt = (
+        "Pesan Laboratorium Komputer untuk praktikum 25 orang pada 27 September 2026 "
+        "jam 08:00 sampai 10:00."
+    )
+    initial_state = new_state(prompt, requester="FAC-001", today="2026-09-21")
+    final_state = await campusflow_agent.ainvoke(initial_state)
+
+    assert final_state["workflow_status"] == "ROOM_UNAVAILABLE"
+    assert final_state["booking_reference"] is None
+    assert any("UNDER_RENOVATION" in e for e in final_state["errors"])
+
+
+@pytest.mark.asyncio
+async def test_invalid_time_range_rejection_tc06():
+    """TC-06: Parameter waktu tidak valid (jam mulai >= jam selesai)."""
+    prompt = (
+        "Pesan Ruang Kuliah 201 untuk kuliah tamu 40 orang pada 28 September 2026 "
+        "jam 15:00 sampai 13:00."
+    )
+    initial_state = new_state(prompt, requester="FAC-001", today="2026-09-21")
+    final_state = await campusflow_agent.ainvoke(initial_state)
+
+    assert final_state["workflow_status"] == "INVALID_REQUEST"
+    assert final_state["booking_reference"] is None
+    assert any("Jam mulai harus lebih awal dari jam selesai" in e for e in final_state["errors"])
+
+
+@pytest.mark.asyncio
+async def test_equipment_not_available_tc07():
+    """TC-07: Peralatan yang diminta tidak terpasang di ruangan."""
+    prompt = (
+        "Pesan Ruang Kuliah 201 untuk presentasi 40 orang pada 29 September 2026 "
+        "jam 10:00 sampai 12:00 dengan smartboard."
+    )
+    initial_state = new_state(prompt, requester="FAC-001", today="2026-09-21")
+    final_state = await campusflow_agent.ainvoke(initial_state)
+
+    assert final_state["workflow_status"] == "EQUIPMENT_UNAVAILABLE"
+    assert final_state["booking_reference"] is None
+    assert any("smartboard" in e.lower() for e in final_state["errors"])
+
+
+@pytest.mark.asyncio
+async def test_room_not_found_rejection_tc08():
+    """TC-08: Ruangan tidak terdaftar / fiktif."""
+    prompt = (
+        "Pesan Hall Serbaguna Lantai 9 untuk reuni 50 orang pada 30 September 2026 "
+        "jam 10:00 sampai 12:00."
+    )
+    initial_state = new_state(prompt, requester="FAC-001", today="2026-09-21")
+    final_state = await campusflow_agent.ainvoke(initial_state)
+
+    assert final_state["workflow_status"] in ("INVALID_REQUEST", "ROOM_UNAVAILABLE")
+    assert final_state["booking_reference"] is None
+
+
+@pytest.mark.asyncio
+async def test_back_to_back_valid_booking_tc09():
+    """TC-09: Waktu bersinggungan sah (back-to-back boundary)."""
+    # Di seed.sql: SR-101 terisi 13:00 - 15:00 pada 2026-09-23.
+    # Kita pesan 15:00 - 17:00 (tepat saat acara sebelumnya selesai).
+    prompt = (
+        "Pesan Ruang Seminar 101 untuk koordinasi riset 20 orang pada 23 September 2026 "
+        "jam 15:00 sampai 17:00."
+    )
+    initial_state = new_state(prompt, requester="FAC-001", today="2026-09-21")
+    final_state = await campusflow_agent.ainvoke(initial_state)
+
+    assert final_state["workflow_status"] == "COMPLETED"
+    assert final_state["booking_reference"] is not None
+    assert final_state["booking_authorized"] is True
+
+
+@pytest.mark.asyncio
+async def test_ambiguous_relative_date_confirmation_tc10():
+    """TC-10: Tanggal relatif memerlukan konfirmasi sebelum lanjut (Human-in-the-Loop)."""
+    prompt = (
+        "Pesan Auditorium Utama untuk briefing 50 orang Selasa depan "
+        "jam 09:00 sampai 11:00."
+    )
+    initial_state = new_state(prompt, requester="FAC-001", today="2026-09-21", date_confirmed=False)
+    final_state = await campusflow_agent.ainvoke(initial_state)
+
+    assert final_state["workflow_status"] in ("INVALID_REQUEST", "NEEDS_CLARIFICATION")
+    assert final_state["booking_reference"] is None
+    assert "date_confirmation" in final_state["missing_fields"]
+
+
+@pytest.mark.asyncio
+async def test_duplicate_booking_rejection():
+    """Pencegahan pemesanan ganda (duplicate booking) pada slot waktu yang sama."""
+    prompt = (
+        "Pesan Ruang Seminar 101 untuk sesi 1 20 orang pada 25 September 2026 "
+        "jam 13:00 sampai 15:00."
+    )
+    # Pemesanan pertama berhasil
+    state1 = new_state(prompt, requester="FAC-001", today="2026-09-21")
+    res1 = await campusflow_agent.ainvoke(state1)
+    assert res1["workflow_status"] == "COMPLETED"
+    assert res1["booking_reference"] is not None
+
+    # Pemesanan kedua dengan slot waktu dan ruangan yang sama persis ditolak
+    state2 = new_state(prompt, requester="FAC-002", today="2026-09-21")
+    res2 = await campusflow_agent.ainvoke(state2)
+    assert res2["workflow_status"] == "ROOM_UNAVAILABLE"
+    assert res2["booking_reference"] is None
+
+
+@pytest.mark.asyncio
+async def test_notification_failure_graceful_handling(monkeypatch):
+    """Test 7 SRS: Booking sukses di DB, namun pengiriman notifikasi gagal (graceful degradation)."""
+    prompt = (
+        "Pesan auditorium utama untuk workshop AI 100 orang pada 23 September 2026 "
+        "jam 13:00 sampai 15:00, pastikan proyektor berfungsi."
+    )
+    initial_state = new_state(prompt, requester="FAC-001", today="2026-09-21")
+
+    # Simulasikan kegagalan panggilan notifikasi MCP
+    async def mock_call_notification(tool_name, arguments):
+        return {"status": "FAILED", "error": "Simulated timeout in notification dispatch"}
+
+    import sys
+    monkeypatch.setattr(
+        sys.modules["src.agent.nodes.send_notification"],
+        "call_notification",
+        mock_call_notification,
+    )
+
+    final_state = await campusflow_agent.ainvoke(initial_state)
+
+    # Invariant penting: Booking di database tetap sah dan tidak dibatalkan
+    assert final_state["booking_reference"] is not None
+    assert final_state["booking_reference"].startswith("BK-2026-")
+    assert final_state["notification_status"] == "FAILED"
+    assert final_state["workflow_status"] == "COMPLETED_PARTIAL"
+
+    # Verifikasi reservasi memang tersimpan di SQLite
+    conn = sqlite3.connect(str(DB_PATH))
+    row = conn.execute(
+        "SELECT status FROM bookings WHERE booking_reference = ?",
+        (final_state["booking_reference"],),
+    ).fetchone()
+    conn.close()
+    assert row is not None
+    assert row[0] == "CONFIRMED"
+
+    # Verifikasi jejak audit mencatat keputusan PARTIAL
+    audit_steps = {a["step_name"]: a for a in final_state["audit_trail"]}
+    assert "send_notification" in audit_steps
+    assert audit_steps["send_notification"]["decision"] == "PARTIAL"
+
+
+

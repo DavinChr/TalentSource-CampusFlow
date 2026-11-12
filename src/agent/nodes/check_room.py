@@ -43,6 +43,8 @@ async def check_room(state: AgentState) -> Dict[str, Any]:
                 f"Jadwal bentrok pada {req['booking_date']} {req['start_time']}–{req['end_time']}. "
                 f"Ruangan telah terisi acara '{c.get('event_name')}' ({c.get('start_time')}–{c.get('end_time')})."
             )
+        elif res.get("reason"):
+            errors.append(f"Ruangan {req['room_name']} tidak tersedia: {res['reason']}")
         else:
             errors.append(f"Ruangan {req['room_name']} tidak tersedia pada jadwal tersebut.")
     else:
