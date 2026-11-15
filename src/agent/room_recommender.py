@@ -148,10 +148,17 @@ def resolve_option_selection(
         if code_clean in user_no_dash or opt["room_code"].lower() in reply_clean:
             return opt
 
-    # 3. Cek nama ruangan (misal: "ruang kuliah 201", "kuliah 201")
+    # 3. Cek nama ruangan (misal: "ruang kuliah 201", "kuliah 201", "mulfung", "audit")
     for opt in options:
         name_lower = opt["room_name"].lower()
         if name_lower in reply_clean:
+            return opt
+        # Cek singkatan / sebutan populer ruangan
+        if "multifungsi" in name_lower and any(k in reply_clean for k in ("mulfung", "multi fungsi")):
+            return opt
+        if "auditorium" in name_lower and "audit" in reply_clean:
+            return opt
+        if "operation room" in name_lower and " or " in f" {reply_clean} ":
             return opt
         # Cek kata kunci parsial (misal: "kuliah 201")
         name_words = [w for w in name_lower.split() if w not in ("ruang", "gedung")]

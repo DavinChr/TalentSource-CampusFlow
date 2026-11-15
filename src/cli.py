@@ -65,6 +65,14 @@ def _merge_extractions(old: Optional[LLMBookingExtraction], new: LLMBookingExtra
     if not old:
         return new
 
+    merged_room = new.room_name or old.room_name
+    merged_event = new.event_name or old.event_name
+    merged_date = new.booking_date or old.booking_date
+    merged_date_rel = new.date_relative if new.booking_date else old.date_relative
+    merged_date_text = new.date_text or old.date_text
+    merged_start = new.start_time or old.start_time
+    merged_end = new.end_time or old.end_time
+    merged_attendees = new.attendee_count or old.attendee_count
     merged_equipment = list(dict.fromkeys(old.required_equipment + new.required_equipment))
 
     merged_notes = old.notes
@@ -74,21 +82,73 @@ def _merge_extractions(old: Optional[LLMBookingExtraction], new: LLMBookingExtra
         else:
             merged_notes = new.notes.strip()
 
+    # Periksa kelengkapan field pada state gabungan
+    missing = []
+    if not merged_room:
+        missing.append("ruangan")
+    if not merged_date:
+        missing.append("tanggal")
+    if not merged_start:
+        missing.append("jam mulai")
+    if not merged_end:
+        missing.append("jam selesai")
+
+    # Ambiguitas yang masih aktif
+    active_ambiguities = []
+    for amb in (new.ambiguities or old.ambiguities or []):
+        amb_l = amb.lower()
+        if merged_start and merged_end and "jam" in amb_l:
+            continue
+        if merged_date and "tanggal" in amb_l:
+            continue
+        active_ambiguities.append(amb)
+
+    # Tentukan apakah masih butuh klarifikasi berdasarkan data KUMULATIF
+    if not missing and not active_ambiguities:
+        needs_clarification = False
+        clarification_msg = None
+    else:
+        needs_clarification = True
+        # Cegah bertanya ulang hal yang SUDAH ADA di merged state
+        stale_question = False
+        if new.clarification_message:
+            msg_l = new.clarification_message.lower()
+            if merged_start and merged_end and any(w in msg_l for w in ("pukul berapa", "jam mulai", "jam selesai")):
+                stale_question = True
+            if merged_room and any(w in msg_l for w in ("pilih nomor", "ruangan nomor berapa", "ruangan apa")):
+                stale_question = True
+            if merged_date and "tanggal berapa" in msg_l:
+                stale_question = True
+
+        if new.clarification_message and not stale_question:
+            clarification_msg = new.clarification_message
+        else:
+            parts = []
+            if "ruangan" in missing:
+                parts.append("pilihan ruangan")
+            if "tanggal" in missing:
+                parts.append("tanggal acara")
+            if "jam mulai" in missing or "jam selesai" in missing:
+                parts.append("jam mulai dan selesai (contoh: 08:00 - 11:00)")
+            if not merged_attendees:
+                parts.append("estimasi jumlah peserta")
+            clarification_msg = f"Baik, data pemesanan telah dicatat. Mohon lengkapi info: {', '.join(parts)}."
+
     return LLMBookingExtraction(
-        room_name=new.room_name or old.room_name,
-        event_name=new.event_name or old.event_name,
-        booking_date=new.booking_date or old.booking_date,
-        date_relative=new.date_relative or old.date_relative,
-        date_text=new.date_text or old.date_text,
-        start_time=new.start_time or old.start_time,
-        end_time=new.end_time or old.end_time,
-        attendee_count=new.attendee_count or old.attendee_count,
+        room_name=merged_room,
+        event_name=merged_event,
+        booking_date=merged_date,
+        date_relative=merged_date_rel,
+        date_text=merged_date_text,
+        start_time=merged_start,
+        end_time=merged_end,
+        attendee_count=merged_attendees,
         required_equipment=merged_equipment,
         notes=merged_notes,
-        missing_fields=new.missing_fields,
-        ambiguities=new.ambiguities,
-        needs_clarification=new.needs_clarification,
-        clarification_message=new.clarification_message,
+        missing_fields=missing,
+        ambiguities=active_ambiguities,
+        needs_clarification=needs_clarification,
+        clarification_message=clarification_msg,
     )
 
 
@@ -254,24 +314,25 @@ async def run_interactive_session():
         extraction: Optional[LLMBookingExtraction] = None
 
         if llm_client:
+            conversation_history.append({"role": "user", "content": user_input})
             try:
                 extraction = llm_client.parse_user_request(
                     user_message=user_input,
                     today=today,
-                    conversation_history=conversation_history,
+                    conversation_history=conversation_history[:-1],
                 )
             except Exception as e:
                 print(f"⚠️ Kuota/Koneksi Gemini bermasalah ({e.__class__.__name__}).")
                 print("🔄 Mengalihkan ke Parser Deterministik & Rekomendasi Ruangan Cerdas...")
                 extraction, active_options = _deterministic_extract(user_input, today)
         else:
+            conversation_history.append({"role": "user", "content": user_input})
             extraction, active_options = _deterministic_extract(user_input, today)
 
         # 2. Human-in-the-Loop: Tangani kebutuhan klarifikasi interaktif
         accumulated_text = user_input
         while extraction and extraction.needs_clarification:
             print(f"\n🤖 Asisten CampusFlow:\n{extraction.clarification_message}")
-            conversation_history.append({"role": "user", "content": user_input})
             conversation_history.append({"role": "assistant", "content": extraction.clarification_message})
 
             try:
@@ -283,15 +344,17 @@ async def run_interactive_session():
                 print("Permintaan dibatalkan.")
                 break
 
-            print("\n🔍 Memperbarui data reservasi...")
+            conversation_history.append({"role": "user", "content": clarification_reply})
             accumulated_text = f"{accumulated_text}. {clarification_reply}"
+
+            print("\n🔍 Memperbarui data reservasi...")
 
             if llm_client:
                 try:
                     new_ext = llm_client.parse_user_request(
-                        user_message=f"Klarifikasi tambahan: {clarification_reply}",
+                        user_message=clarification_reply,
                         today=today,
-                        conversation_history=conversation_history,
+                        conversation_history=conversation_history[:-1],
                     )
                     extraction = _merge_extractions(extraction, new_ext)
                 except Exception:

@@ -37,7 +37,7 @@ ROOMS: Dict[str, List[str]] = {
     "PPAG-LT3": ["lecture theater 3 ppag", "lecture theater 3", "lt 3 ppag", "lt3 ppag", "ppag lt3"],
     "PPAG-201": ["lacture hall ppag", "lecture hall ppag", "lacture hall", "lecture hall", "ppag 201"],
     "PPAG-202": ["ruang kuliah ppag 202", "ppag 202", "ruang kuliah 202"],
-    "PPAG-203": ["ruang multifungsi", "multifungsi ppag", "ruang serbaguna ppag", "ppag 203"],
+    "PPAG-203": ["ruang multifungsi", "multifungsi ppag", "ruang serbaguna ppag", "ruang mulfung", "mulfung", "mulfung ppag", "ruang mulfung ppag", "ruang multifungsi ppag", "ppag 203"],
     "G0-OR": ["operation room rektorat", "operation room", "or rektorat", "g0-or"],
     "G9-AULA": ["aula driekore", "aula fe", "aula feb", "aula gedung 9", "g9-aula"],
     "G9-101": ["ruang kuliah 9101", "kelas 9101", "ruang 9101", "9101", "g9-101"],
@@ -52,7 +52,7 @@ ROOMS: Dict[str, List[str]] = {
 EQUIPMENT: Dict[str, str] = {
     "projector": r"proyektor|projector",
     "microphone": r"mikrofon|microphone|mic",
-    "sound_system": r"sound\s*system|sistem\s+suara",
+    "sound_system": r"sound\s*system|soundsystem|sistem\s+suara",
     "smartboard": r"smart\s*board",
     "whiteboard": r"whiteboard|papan\s+tulis",
     "video_conferencing": r"video\s*conferenc\w*|vidcon|video\s+konferensi",
@@ -93,7 +93,7 @@ _WEEKDAY_RE = re.compile(
 )
 _WEEK_PHRASE_RE = re.compile(r"\b(?:(?:minggu|pekan)\s+(?:depan|ini)|(?:next|this)\s+week)\b", re.I)
 
-_SEP = r"(?:-|–|sampai(?:\s+dengan)?|s/d|hingga|to|until)"
+_SEP = r"(?:-|–|sampai(?:\s+dengan)?|sampe|s/d|hingga|to|until)"
 _T_MIN = re.compile(rf"\b(\d{{1,2}})[:.](\d{{2}})\s*{_SEP}\s*(\d{{1,2}})[:.](\d{{2}})\b", re.I)
 _T_CUE = re.compile(
     rf"\b(?:jam|pukul|from|at)\s*(\d{{1,2}})(?:[:.](\d{{2}}))?\s*{_SEP}\s*(\d{{1,2}})(?:[:.](\d{{2}}))?\b",
