@@ -128,10 +128,10 @@ CampusFlow memerlukan tiga server MCP independen yang saling terisolasi dan berk
 | **Fase 2** | **Desain Sistem Arsitektur & SRS** | **SELESAI** | Dokumen SRS IEEE (`docs/SRS_CampusFlow.md`, `docs/Software Requirements Specification (SRS) - Campus Flow.pdf`), `docs/architecture.md`, `docs/workflow.md`, `docs/state-machine.md`, `docs/data-model.md`, `docs/mcp-architecture.md` |
 | **Fase 3** | **Database & Data Uji (Seed Data)** | **SELESAI** | `data/database/schema.sql`, `data/database/seed.sql`, `data/database/init_db.py` (13/13 lolos), berkas operasional `data/filesystem/` |
 | **Fase 4** | **Infrastruktur Server MCP** | **SELESAI** | 3 Server MCP Python (`db_server.py`, `fs_server.py`, `notification_server.py`), pengujian integrasi multi-server (`test_mcp_integration.py` 2/2 lolos) |
-| **Fase 5** | **Orkestrasi Agen (LangGraph & Gemini LLM)** | **SELESAI** | Graf alur kerja LangGraph (`graph.py`), simpul terisolasi (`nodes/`), integrasi Google GenAI Gemini (`llm.py`), adaptasi Human-in-the-Loop, antarmuka CLI interaktif (`cli.py`), pengujian alur penuh (`test_agent_workflow.py` 5/5 lolos) |
-| **Fase 6** | **Guardrails & Uji Keamanan** | **SIAP DIKERJAKAN** | Penegakan invariant keamanan, pencegahan halusinasi, isolasi transaksi |
-| **Fase 7** | **Pengujian Otomatis Menyeluruh** | Menunggu Fase 6 | 10 Skenario pengujian otomatis end-to-end (`pytest`) |
-| **Fase 8** | **Audit Akhir & Demonstrasi** | Menunggu Fase 7 | Demo CLI kasus utama & kasus gagal, `README.md`, laporan akhir |
+| **Fase 5** | **Orkestrasi Agen (LangGraph & Gemini LLM)** | **SELESAI** | Graf alur kerja LangGraph (`graph.py`), simpul terisolasi (`nodes/`), integrasi Google GenAI Gemini (`llm.py`), adaptasi Human-in-the-Loop, integrasi data UNPAR (`PPAG`, `G0`, `G9`, `G2`), modul rekomendasi ruangan (`room_recommender.py`), antarmuka CLI interaktif (`cli.py`) |
+| **Fase 6** | **Guardrails & Uji Keamanan** | **SELESAI** | Penegakan invariant keamanan INV-001 s/d INV-005, pencegahan bentrok/duplikasi atomik, penanganan kegagalan notifikasi parsial (*graceful degradation*), proteksi out-of-domain |
+| **Fase 7** | **Pengujian Otomatis Menyeluruh** | **SELESAI** | 53 Skenario pengujian otomatis pytest lolos 100% (mencakup seluruh TC-01 s/d TC-10, UNPAR, duplicate booking, notification failure, mock MCP) |
+| **Fase 8** | **Audit Akhir & Dokumentasi** | **SELESAI** | Demo CLI interaktif (`src/cli.py`), dokumentasi resmi lengkap di `README.md`, verifikasi bebas hardcoded credentials |
 
 ---
 

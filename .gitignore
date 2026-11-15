@@ -90,5 +90,8 @@ temp/
 **/.prompts/
 .agents/
 **/.agents/
+.archify/
+**/.archify/
+
 
 
