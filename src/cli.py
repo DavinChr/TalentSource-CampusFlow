@@ -16,10 +16,17 @@ Fitur Utama:
 import asyncio
 from datetime import date
 import json
+import logging
 import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+import warnings
+
+# Redam log verbose dan warning dari pustaka eksternal (google_genai, httpx, httpcore)
+warnings.filterwarnings("ignore")
+for _log_name in ("google_genai", "google_genai.models", "httpx", "httpcore", "urllib3"):
+    logging.getLogger(_log_name).setLevel(logging.ERROR)
 
 # Pastikan encoding output terminal adalah UTF-8 agar tidak error di Windows cp1252
 if hasattr(sys.stdout, "reconfigure"):

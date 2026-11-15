@@ -8,9 +8,17 @@ serta pembentukan respons ramah kepada pengguna kampus.
 
 from datetime import date
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import warnings
+
+# Redam peringatan AFC dan log verbose dari pustaka pihak ketiga (google_genai, httpx, httpcore)
+warnings.filterwarnings("ignore")
+for _log_name in ("google_genai", "google_genai.models", "httpx", "httpcore", "urllib3"):
+    logging.getLogger(_log_name).setLevel(logging.ERROR)
+
 import dotenv
 from google import genai
 from pydantic import BaseModel, Field
