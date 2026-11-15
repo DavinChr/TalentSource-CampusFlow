@@ -228,6 +228,63 @@ async def test_unpar_booking_flow_end_to_end():
 
 
 @pytest.mark.asyncio
+async def test_multipurpose_add_on_equipment_flow():
+    """Menguji alur pemesanan Ruang Multifungsi (PPAG-203) dengan peralatan add-on portabel."""
+    prompt = (
+        "Pesan Ruang Multifungsi PPAG untuk yudisium 200 orang pada 2027-01-08 "
+        "jam 08:00 sampai 11:00 dengan proyektor, sound system, dan mic."
+    )
+    initial_state = new_state(prompt, requester="FAC-001", today="2026-11-15")
+    initial_state["parsed_request"] = {
+        "room_name": "PPAG-203",
+        "event_name": "yudisium",
+        "booking_date": "2027-01-08",
+        "date_relative": False,
+        "start_time": "08:00",
+        "end_time": "11:00",
+        "attendee_count": 200,
+        "required_equipment": ["projector", "sound_system", "microphone"],
+        "notes": "Prasmanan, 230 kursi, 12 sofa dosen",
+    }
+
+    final_state = await campusflow_agent.ainvoke(initial_state)
+
+    # 1. Alur kerja harus berhasil penuh
+    assert final_state["workflow_status"] == "COMPLETED"
+    assert final_state["all_validations_passed"] is True
+    assert final_state["booking_authorized"] is True
+    assert final_state["booking_reference"] is not None
+
+    # 2. Peralatan teralokasi sebagai add-on portabel aktif
+    eq_results = final_state["equipment_results"]
+    assert len(eq_results) >= 3
+    add_ons = [eq for eq in eq_results if eq.get("is_add_on")]
+    assert len(add_ons) == 3
+    eq_types = {eq["equipment_type"] for eq in add_ons}
+    assert {"projector", "sound_system", "microphone"}.issubset(eq_types)
+
+    # 3. Notifikasi ke IT Support memuat instruksi pengiriman add-on
+    notifs = final_state["notification_details"]["notifications"]
+    it_notif = next(n for n in notifs if n.get("department_key") == "it_support" or "TI" in n.get("department", ""))
+    assert it_notif is not None
+    payload = it_notif.get("payload", {})
+    assert "add_on_equipment" in payload
+    assert len(payload["add_on_equipment"]) == 3
+    assert "Prasmanan" in payload.get("notes", "")
+
+    # 4. Tersimpan di database SQLite
+    conn = sqlite3.connect(str(DB_PATH))
+    row = conn.execute(
+        "SELECT r.room_code, b.attendee_count, b.notes FROM bookings b JOIN rooms r ON r.id = b.room_id WHERE b.booking_reference = ?",
+        (final_state["booking_reference"],),
+    ).fetchone()
+    conn.close()
+    assert row is not None
+    assert row[0] == "PPAG-203"
+    assert row[1] == 200
+
+
+@pytest.mark.asyncio
 async def test_room_under_renovation_tc05():
     """TC-05: Ruangan berstatus UNDER_RENOVATION ditolak pada validasi ketersediaan."""
     prompt = (

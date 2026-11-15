@@ -43,7 +43,7 @@ async def check_equipment(state: AgentState) -> Dict[str, Any]:
         items = res.get("equipment", [])
         if not res.get("found", False) or not items:
             all_found = False
-            errors.append(f"Peralatan '{eq_type}' tidak tersedia di ruangan {room_name}.")
+            errors.append(f"Peralatan '{eq_type}' tidak tersedia di ruangan {room_name} dan tidak dapat disediakan sebagai unit portabel/add-on.")
         else:
             equipment_results.extend(items)
 

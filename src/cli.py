@@ -435,7 +435,16 @@ async def run_interactive_session():
         if not summary:
             if status in ("COMPLETED", "COMPLETED_PARTIAL"):
                 ref = final_state.get("booking_reference")
-                eq_text = ", ".join(extraction.required_equipment) if extraction.required_equipment else "Standar Ruangan"
+                eq_results = final_state.get("equipment_results") or []
+                add_ons = [eq.get("equipment_name", eq.get("equipment_code")) for eq in eq_results if eq.get("is_add_on")]
+                built_ins = [eq.get("equipment_name", eq.get("equipment_code")) for eq in eq_results if not eq.get("is_add_on")]
+                
+                eq_parts = []
+                if built_ins:
+                    eq_parts.append(f"Built-in: {', '.join(built_ins)}")
+                if add_ons:
+                    eq_parts.append(f"Add-on (disiapkan IT Support): {', '.join(add_ons)}")
+                eq_text = " | ".join(eq_parts) if eq_parts else (", ".join(extraction.required_equipment) if extraction.required_equipment else "Standar Ruangan")
                 notes_line = f"  • Catatan Khusus   : {extraction.notes}\n" if extraction.notes else ""
                 summary = (
                     f"Pemesanan fasilitas berhasil dikonfirmasi!\n"

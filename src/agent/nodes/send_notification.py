@@ -39,6 +39,8 @@ async def send_notification(state: AgentState) -> Dict[str, Any]:
         "subject": f"Konfirmasi Reservasi Ruangan: {booking_ref}",
         "payload": fac_payload,
     })
+    fac_res["payload"] = fac_payload
+    fac_res["subject"] = f"Konfirmasi Reservasi Ruangan: {booking_ref}"
     notifications_sent.append(fac_res)
     if fac_res.get("status") != "SENT":
         all_success = False
@@ -46,6 +48,11 @@ async def send_notification(state: AgentState) -> Dict[str, Any]:
 
     # 2. Notifikasi ke IT Support & Multimedia (jika ada peralatan)
     if req.get("required_equipment"):
+        add_on_list = [
+            f"{eq.get('equipment_name')} ({eq.get('equipment_code')})"
+            for eq in (state.get("equipment_results") or [])
+            if eq.get("is_add_on")
+        ]
         it_payload = {
             "booking_reference": booking_ref,
             "room_name": req["room_name"],
@@ -54,11 +61,19 @@ async def send_notification(state: AgentState) -> Dict[str, Any]:
             "time": f"{req['start_time']} - {req['end_time']}",
             "notes": req.get("notes"),
         }
+        subject = f"Permintaan Persiapan Multimedia: {booking_ref}"
+        if add_on_list:
+            it_payload["add_on_equipment"] = add_on_list
+            it_payload["dispatch_notes"] = "Peralatan add-on portabel perlu dikirim dan disiapkan di ruangan oleh tim IT Support."
+            subject = f"Permintaan Persiapan & Pengiriman Add-On Multimedia: {booking_ref}"
+
         it_res = await call_notification("send_department_notification", {
             "department_key": it_dept_code,
-            "subject": f"Permintaan Persiapan Multimedia: {booking_ref}",
+            "subject": subject,
             "payload": it_payload,
         })
+        it_res["payload"] = it_payload
+        it_res["subject"] = subject
         notifications_sent.append(it_res)
         if it_res.get("status") != "SENT":
             all_success = False

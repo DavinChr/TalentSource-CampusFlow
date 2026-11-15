@@ -225,13 +225,25 @@ def query_room_availability(
 # Tool 5: query_equipment
 # =============================================================================
 @server.tool()
-def query_equipment(room_name: str, equipment_type: str = "") -> Dict[str, Any]:
+def query_equipment(
+    room_name: str,
+    equipment_type: str = "",
+    allow_add_on: bool = True,
+) -> Dict[str, Any]:
     """
     Mencari daftar peralatan yang terpasang di dalam ruangan, dengan opsi filter tipe alat.
+    
+    Jika alat tidak terpasang permanen (built-in) di ruangan dan allow_add_on=True,
+    sistem akan mencari unit portabel aktif di inventaris kampus yang dapat disiapkan
+    sebagai add-on oleh tim IT Support & Fasilitas (misal: proyektor portabel, 
+    sound system portabel, mikrofon wireless, papan tulis portabel).
+    Peralatan instalasi tetap (smartboard, fixed PC lab, panggung aula) tidak dapat
+    dijadikan add-on portabel.
     
     Args:
         room_name: Nama atau kode ruangan.
         equipment_type: Tipe alat opsional (misal: 'projector', 'microphone', 'sound_system').
+        allow_add_on: Apakah boleh mencarikan alat portabel/add-on jika tidak ada built-in.
     """
     with get_db_connection() as conn:
         room = _resolve_room(conn, room_name)
@@ -269,9 +281,48 @@ def query_equipment(room_name: str, equipment_type: str = "") -> Dict[str, Any]:
                 "brand": r["brand"],
                 "db_status": r["db_status"],
                 "is_primary": bool(r["is_primary"]),
+                "is_add_on": False,
             }
             for r in rows
         ]
+
+        # Peralatan yang dapat disediakan sebagai unit portabel / add-on
+        PORTABLE_EQUIPMENT_TYPES = {
+            "projector",
+            "microphone",
+            "sound_system",
+            "whiteboard",
+        }
+        eq_type_norm = equipment_type.strip().lower()
+
+        if allow_add_on and not items and eq_type_norm in PORTABLE_EQUIPMENT_TYPES:
+            addon_query = """
+                SELECT e.id AS equipment_id, e.equipment_code, e.equipment_name,
+                       e.equipment_type, e.brand, e.status AS db_status
+                FROM equipment e
+                WHERE LOWER(e.equipment_type) = ?
+                  AND e.status = 'ACTIVE'
+                ORDER BY 
+                    CASE 
+                        WHEN e.equipment_name LIKE '%Portable%' OR e.equipment_name LIKE '%Seminar%' OR e.equipment_name LIKE '%Clip-On%' THEN 0
+                        ELSE 1
+                    END,
+                    e.id ASC
+                LIMIT 1
+            """
+            addon_row = conn.execute(addon_query, (eq_type_norm,)).fetchone()
+            if addon_row:
+                items.append({
+                    "equipment_id": addon_row["equipment_id"],
+                    "equipment_code": addon_row["equipment_code"],
+                    "equipment_name": addon_row["equipment_name"],
+                    "equipment_type": addon_row["equipment_type"],
+                    "brand": addon_row["brand"],
+                    "db_status": addon_row["db_status"],
+                    "is_primary": False,
+                    "is_add_on": True,
+                })
+
         return {
             "found": len(items) > 0,
             "room_code": room["room_code"],
