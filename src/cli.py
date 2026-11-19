@@ -58,6 +58,7 @@ from src.agent.room_recommender import (
     format_room_options_prompt,
     resolve_option_selection,
 )
+from src.agent.early_validator import check_early_constraints
 
 
 def _merge_extractions(old: Optional[LLMBookingExtraction], new: LLMBookingExtraction) -> LLMBookingExtraction:
@@ -329,7 +330,25 @@ async def run_interactive_session():
             conversation_history.append({"role": "user", "content": user_input})
             extraction, active_options = _deterministic_extract(user_input, today)
 
-        # 2. Human-in-the-Loop: Tangani kebutuhan klarifikasi interaktif
+        # 2. Early Constraint & Fast-Fail Check:
+        # Jika sudah terbukti tidak valid sejak awal (ruang renovasi, kapasitas kurang, alat tidak ada, tanggal lewat, bentrok)
+        # langsung tolak dan beritahu pengguna tanpa meminta user mengisi sisa informasi lainnya!
+        early_check = check_early_constraints(extraction, today)
+        if not early_check["valid"]:
+            print(f"\n📋 Status Eksekusi: [{early_check['status']}]")
+            print(f"❌ PERMINTAAN DITOLAK / TIDAK DAPAT DIPROSES:")
+            print(f"   • {early_check['message']}")
+            recs = early_check.get("recommendations", [])
+            if recs:
+                print("\n💡 Rekomendasi Ruangan Alternatif:")
+                for r in recs:
+                    bld = f" ({r['building_name']})" if r.get("building_name") else ""
+                    print(f"   • [{r.get('option_number', '-')}] {r['room_name']} ({r['room_code']}){bld} — Kapasitas: {r['capacity']} orang")
+            print("\n📜 Jejak Audit (Audit Trail):")
+            print(f"  🔴 [1] early_constraint_check        -> REJECT  (Status: {early_check['status']})")
+            continue
+
+        # 3. Human-in-the-Loop: Tangani kebutuhan klarifikasi interaktif
         accumulated_text = user_input
         while extraction and extraction.needs_clarification:
             print(f"\n🤖 Asisten CampusFlow:\n{extraction.clarification_message}")
@@ -374,10 +393,27 @@ async def run_interactive_session():
                 )
                 extraction = _merge_extractions(extraction, det_ext)
 
+            # Cek kendala dini pada setiap jawaban baru
+            early_check = check_early_constraints(extraction, today)
+            if not early_check["valid"]:
+                print(f"\n📋 Status Eksekusi: [{early_check['status']}]")
+                print(f"❌ PERMINTAAN DITOLAK / TIDAK DAPAT DIPROSES:")
+                print(f"   • {early_check['message']}")
+                recs = early_check.get("recommendations", [])
+                if recs:
+                    print("\n💡 Rekomendasi Ruangan Alternatif:")
+                    for r in recs:
+                        bld = f" ({r['building_name']})" if r.get("building_name") else ""
+                        print(f"   • [{r.get('option_number', '-')}] {r['room_name']} ({r['room_code']}){bld} — Kapasitas: {r['capacity']} orang")
+                print("\n📜 Jejak Audit (Audit Trail):")
+                print(f"  🔴 [1] early_constraint_check        -> REJECT  (Status: {early_check['status']})")
+                extraction = None
+                break
+
         if not extraction or extraction.needs_clarification:
             continue
 
-        # 3. Data lengkap -> Eksekusi Orkestrasi LangGraph & Server MCP
+        # 4. Data lengkap -> Eksekusi Orkestrasi LangGraph & Server MCP
         print("\n⚙️ Menjalankan orkestrasi alur kerja dan validasi MCP...")
         
         # Buat state awal yang membawa data terurai

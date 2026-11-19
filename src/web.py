@@ -40,6 +40,7 @@ from starlette.requests import Request
 from src.agent.llm import GeminiAgentClient, LLMBookingExtraction
 from src.agent.graph import campusflow_agent
 from src.agent.state import new_state
+from src.agent.early_validator import check_early_constraints
 from src.cli import (
     _merge_extractions,
     _deterministic_extract,
@@ -132,6 +133,40 @@ async def handle_chat(request: Request):
         extraction = _merge_extractions(extraction, det_ext)
 
     session["extraction"] = extraction
+
+    # 0. Early Constraint & Fast-Fail Check:
+    # Jika sudah terbukti tidak valid sejak awal (ruang renovasi, kapasitas kurang, alat tidak ada, tanggal lewat, bentrok)
+    # langsung tolak dan beritahu pengguna beserta rekomendasi tanpa meminta user mengisi sisa informasi lainnya!
+    early_check = check_early_constraints(extraction, today)
+    if not early_check["valid"]:
+        msg = f"❌ {early_check['message']}"
+        recs = early_check.get("recommendations", [])
+        if recs:
+            msg += "\n\n💡 Rekomendasi Ruangan Alternatif:\n"
+            for r in recs:
+                bld = f" ({r['building_name']})" if r.get("building_name") else ""
+                msg += f"• [{r.get('option_number', '-')}] {r['room_name']} ({r['room_code']}){bld} — Kapasitas: {r['capacity']} orang\n"
+            msg += "\nSilakan pilih nomor opsi rekomendasi di atas atau sebutkan nama ruangan alternatif."
+
+        history.append({"role": "assistant", "content": msg})
+        session["active_options"] = recs
+        session["extraction"] = None  # Reset karena permintaan invalid
+
+        return JSONResponse({
+            "status": early_check["status"],
+            "reply": msg,
+            "options": recs,
+            "booking": extraction.model_dump() if extraction else {},
+            "audit_trail": [{
+                "step_index": 1,
+                "step_name": "early_constraint_check",
+                "decision": "REJECT",
+                "next_state": early_check["status"],
+            }],
+            "notifications": [],
+            "equipment_results": [],
+            "errors": [early_check["message"]],
+        })
 
     # 1. Jika masih butuh klarifikasi (Human-in-the-Loop)
     if not extraction or extraction.needs_clarification:
