@@ -131,7 +131,7 @@ class GeminiAgentClient:
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY", "")
-        self.model = model or os.getenv("GEMINI_MODEL", "gemini-flash-latest")
+        self.model = model or os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
         if not self.api_key:
             raise ValueError(
                 "GEMINI_API_KEY belum disetel! Harap masukkan API key di file .env."
@@ -181,7 +181,7 @@ ATURAN PENTING (HUMAN-IN-THE-LOOP & ANTI-HALUSINASI):
 
         full_prompt = "\n".join(contents)
 
-        candidate_models = [self.model, "gemini-3.5-flash-lite", "gemini-3.7-flash", "gemini-flash-latest"]
+        candidate_models = [self.model, "gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"]
         # Hilangkan duplikasi sambil mempertahankan urutan
         unique_models = list(dict.fromkeys(m for m in candidate_models if m))
 
