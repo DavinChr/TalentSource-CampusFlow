@@ -110,10 +110,17 @@ def _is_amendment_request(user_msg: str, last_booking: Optional[Dict[str, Any]])
 
 
 async def handle_index(request: Request):
-    """Menyajikan halaman UI utama."""
+    """Menyajikan halaman UI utama dengan header anti-cache agar peramban selalu memuat JS terbaru."""
     if not HTML_FILE.exists():
         return JSONResponse({"error": "Template HTML tidak ditemukan."}, status_code=404)
-    return FileResponse(HTML_FILE)
+    return FileResponse(
+        HTML_FILE,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
 
 
 async def handle_favicon(request: Request):

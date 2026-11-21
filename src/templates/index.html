@@ -308,7 +308,7 @@
       options.forEach(opt => {
         const btn = document.createElement("button");
         btn.className = "px-3 py-1 bg-white border border-indigo-200 hover:bg-indigo-600 hover:text-white text-indigo-700 text-xs font-semibold rounded-lg shadow-2xs transition flex items-center space-x-1";
-        btn.innerHTML = `<span>[${opt.number}] ${opt.room_name} (${opt.room_code})</span><span class="opacity-75">· ${opt.capacity} pax</span>`;
+        btn.innerHTML = `<span>[${opt.number || opt.option_number || '-'}] ${opt.room_name} (${opt.room_code})</span><span class="opacity-75">· ${opt.capacity} pax</span>`;
         btn.onclick = () => {
           userInput.value = opt.room_code;
           chatForm.dispatchEvent(new Event("submit"));
@@ -366,16 +366,28 @@
           appendMessage("assistant", data.reply);
         }
 
-        renderRecommendationPills(data.options);
-
-        // Update notifications & audit panels if available
-        if (data.notifications && data.notifications.length > 0) {
-          renderNotifications(data.notifications, data.booking_reference, data.equipment_results);
-          switchTab(tabBtnNotifs, panelNotifs);
+        try {
+          renderRecommendationPills(data.options);
+        } catch (e) {
+          console.warn("Render pills warning:", e);
         }
 
-        if (data.audit_trail && data.audit_trail.length > 0) {
-          renderAuditTrail(data.audit_trail, data.status);
+        // Update notifications & audit panels if available
+        try {
+          if (data.notifications && data.notifications.length > 0) {
+            renderNotifications(data.notifications, data.booking_reference, data.equipment_results);
+            switchTab(tabBtnNotifs, panelNotifs);
+          }
+        } catch (e) {
+          console.warn("Render notifications warning:", e);
+        }
+
+        try {
+          if (data.audit_trail && data.audit_trail.length > 0) {
+            renderAuditTrail(data.audit_trail, data.status);
+          }
+        } catch (e) {
+          console.warn("Render audit trail warning:", e);
         }
 
       } catch (err) {
