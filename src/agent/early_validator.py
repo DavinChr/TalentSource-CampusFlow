@@ -76,7 +76,7 @@ def find_rooms_with_equipment(equipment_type: str, attendee_count: Optional[int]
             JOIN room_equipment re ON re.room_id = r.id
             JOIN equipment e ON e.id = re.equipment_id
             JOIN buildings b ON b.id = r.building_id
-            WHERE LOWER(e.equipment_type) = LOWER(?) AND r.status = 'ACTIVE'
+            WHERE LOWER(e.equipment_type) = LOWER(?) AND r.status = 'ACTIVE' AND b.code IN ('PPAG', 'G0', 'G9', 'G2')
             ORDER BY r.capacity ASC
         """
         rows = conn.execute(query, (equipment_type.strip().lower(),)).fetchall()

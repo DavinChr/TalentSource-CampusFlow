@@ -45,13 +45,13 @@ def find_room_recommendations(
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     try:
-        # Hanya ambil ruangan dengan status ACTIVE
+        # Hanya ambil ruangan resmi UNPAR (Gedung PPAG, G0, G9, G2)
         query = """
             SELECT r.id, r.room_code, r.room_name, r.room_type, r.capacity, r.floor,
                    b.name as building_name, b.code as building_code
             FROM rooms r
             JOIN buildings b ON b.id = r.building_id
-            WHERE r.status = 'ACTIVE'
+            WHERE r.status = 'ACTIVE' AND b.code IN ('PPAG', 'G0', 'G9', 'G2')
             ORDER BY r.capacity ASC
         """
         rows = conn.execute(query).fetchall()

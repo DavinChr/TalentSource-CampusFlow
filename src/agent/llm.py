@@ -28,16 +28,8 @@ from pydantic import BaseModel, Field
 ENV_PATH = Path(__file__).resolve().parent.parent.parent / ".env"
 dotenv.load_dotenv(dotenv_path=ENV_PATH)
 
-# Daftar kode dan nama ruangan resmi di kampus (sesuai seed.sql)
+# Daftar kode dan nama ruangan resmi Universitas Katolik Parahyangan (UNPAR) berdasarkan DATA_RUANGAN_UNPAR.txt
 KNOWN_ROOMS = {
-    "AUD-01": "Auditorium Utama (Kapasitas: 300 orang, Gedung Utama; alias: audit, auditorium)",
-    "SR-101": "Ruang Seminar 101 (Kapasitas: 50 orang)",
-    "SR-102": "Ruang Seminar 102 (Kapasitas: 50 orang)",
-    "CR-301": "Ruang Konferensi Eksekutif (Kapasitas: 20 orang)",
-    "LH-201": "Ruang Kuliah 201 (Kapasitas: 80 orang)",
-    "LH-202": "Ruang Kuliah 202 (Kapasitas: 120 orang)",
-    "LAB-401": "Laboratorium Komputer (Kapasitas: 40 orang; alias: lab komputer)",
-    "SR-ENG1": "Ruang Seminar Teknik (Kapasitas: 30 orang)",
     # UNPAR Rooms (Universitas Katolik Parahyangan)
     "PPAG-AUD": "Auditorium Utama PPAG (Kapasitas: 800 orang, Gedung PPAG; alias: audit ppag, auditorium ppag)",
     "PPAG-LT1": "Lecture Theater 1 PPAG (Kapasitas: 90 orang, Gedung PPAG)",
@@ -252,7 +244,7 @@ ATURAN PENTING (HUMAN-IN-THE-LOOP & ANTI-HALUSINASI):
    set `needs_clarification = False` dan `clarification_message = None`.
 4. REKOMENDASI OPSI RUANGAN (PILIHAN GANDA PROAKTIF):
    Jika pengguna belum menyebutkan kode/nama ruangan secara spesifik (misalnya hanya menyebut 'mau pinjem ruangan untuk kelas', 'ruang rapat', 'aula besar', atau hanya menyebut kapasitas tertentu), JANGAN kaku menolak atau meminta nama ruangan tanpa bantuan!
-   Pilihlah 2-4 ruangan yang paling cocok dari daftar Ruangan Resmi di atas (berdasarkan kecocokan kapasitas dan tipe acara).
+   Pilihlah 2-4 ruangan yang paling cocok HANYA dari daftar Ruangan Resmi UNPAR di atas (berdasarkan kecocokan kapasitas dan tipe acara). JANGAN PERNAH merekomendasikan ruangan di luar daftar UNPAR di atas!
    Sajikan opsi pilihan ganda yang ramah dan bernomor: [1] Nama Ruangan (Kode) - Kapasitas, [2] ..., dst. di dalam `clarification_message`, lalu minta pengguna memilih nomor opsi atau nama ruangan tersebut.
 5. PERMINTAAN KHUSUS & CATATAN LOGISTIK (NOTES):
    Jika pengguna menyebutkan kebutuhan logistik khusus (seperti: kebutuhan meja tamu, penataan kursi, proyektor ganda/tengah, tanpa kursi pada jam tertentu, dll.), ekstrak dan simpan ke field `notes` agar tersimpan permanen di database.
