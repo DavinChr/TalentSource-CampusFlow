@@ -1,0 +1,20 @@
+{
+  "notification_id": "N-2026-004",
+  "department_key": "academic_facilities",
+  "department_name": "Fasilitas Akademik",
+  "target_email": "facilities@campusflow.test",
+  "subject": "Konfirmasi Reservasi Ruangan: BK-2026-006",
+  "payload": {
+    "booking_reference": "BK-2026-006",
+    "room_name": "PPAG-202",
+    "event_name": "perkuliahan ekonomi",
+    "date": "2026-10-15",
+    "time": "09:00 - 11:00",
+    "attendee_count": 45,
+    "requester": "FAC-001",
+    "notes": "Kursi diatur model U-shape."
+  },
+  "booking_id": null,
+  "status": "SENT",
+  "sent_at": "2026-11-21T04:21:04Z"
+}

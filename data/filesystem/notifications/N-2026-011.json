@@ -1,0 +1,21 @@
+{
+  "notification_id": "N-2026-011",
+  "department_key": "it_support",
+  "department_name": "Dukungan TI & Multimedia",
+  "target_email": "it.support@campusflow.test",
+  "subject": "Permintaan Persiapan Multimedia: BK-2026-006",
+  "payload": {
+    "booking_reference": "BK-2026-006",
+    "room_name": "AUD-01",
+    "equipment": [
+      "projector",
+      "sound_system"
+    ],
+    "date": "2026-09-23",
+    "time": "19:00 - 21:00",
+    "notes": null
+  },
+  "booking_id": null,
+  "status": "SENT",
+  "sent_at": "2026-11-21T04:21:05Z"
+}

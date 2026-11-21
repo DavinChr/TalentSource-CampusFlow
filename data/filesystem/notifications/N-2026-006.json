@@ -1,0 +1,20 @@
+{
+  "notification_id": "N-2026-006",
+  "department_key": "academic_facilities",
+  "department_name": "Fasilitas Akademik",
+  "target_email": "facilities@campusflow.test",
+  "subject": "Konfirmasi Reservasi Ruangan: BK-2027-001",
+  "payload": {
+    "booking_reference": "BK-2027-001",
+    "room_name": "PPAG-203",
+    "event_name": "yudisium",
+    "date": "2027-01-08",
+    "time": "08:00 - 11:00",
+    "attendee_count": 200,
+    "requester": "FAC-001",
+    "notes": "Prasmanan, 230 kursi, 12 sofa dosen"
+  },
+  "booking_id": null,
+  "status": "SENT",
+  "sent_at": "2026-11-21T04:21:04Z"
+}

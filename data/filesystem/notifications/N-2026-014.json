@@ -1,0 +1,18 @@
+{
+  "notification_id": "N-2026-014",
+  "department_key": "academic_facilities",
+  "department_name": "Fasilitas Akademik",
+  "target_email": "facilities@campusflow.test",
+  "subject": "Konfirmasi Reservasi Ruangan: BK-2026-006",
+  "payload": {
+    "booking_reference": "BK-2026-006",
+    "room_name": "Auditorium Utama",
+    "attendees": 100,
+    "equipment_verified": [
+      "PRJ-03"
+    ]
+  },
+  "booking_id": 6,
+  "status": "SENT",
+  "sent_at": "2026-11-21T04:21:05Z"
+}

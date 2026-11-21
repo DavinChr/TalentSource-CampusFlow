@@ -29,24 +29,24 @@ dotenv.load_dotenv(dotenv_path=ENV_PATH)
 
 # Daftar kode dan nama ruangan resmi di kampus (sesuai seed.sql)
 KNOWN_ROOMS = {
-    "AUD-01": "Auditorium Utama (Kapasitas: 300 orang)",
+    "AUD-01": "Auditorium Utama (Kapasitas: 300 orang, Gedung Utama; alias: audit, auditorium)",
     "SR-101": "Ruang Seminar 101 (Kapasitas: 50 orang)",
     "SR-102": "Ruang Seminar 102 (Kapasitas: 50 orang)",
     "CR-301": "Ruang Konferensi Eksekutif (Kapasitas: 20 orang)",
     "LH-201": "Ruang Kuliah 201 (Kapasitas: 80 orang)",
     "LH-202": "Ruang Kuliah 202 (Kapasitas: 120 orang)",
-    "LAB-401": "Laboratorium Komputer (Kapasitas: 40 orang)",
+    "LAB-401": "Laboratorium Komputer (Kapasitas: 40 orang; alias: lab komputer)",
     "SR-ENG1": "Ruang Seminar Teknik (Kapasitas: 30 orang)",
     # UNPAR Rooms (Universitas Katolik Parahyangan)
-    "PPAG-AUD": "Auditorium Utama PPAG (Kapasitas: 800 orang, Gedung PPAG)",
+    "PPAG-AUD": "Auditorium Utama PPAG (Kapasitas: 800 orang, Gedung PPAG; alias: audit ppag, auditorium ppag)",
     "PPAG-LT1": "Lecture Theater 1 PPAG (Kapasitas: 90 orang, Gedung PPAG)",
     "PPAG-LT2": "Lecture Theater 2 PPAG (Kapasitas: 90 orang, Gedung PPAG)",
     "PPAG-LT3": "Lecture Theater 3 PPAG (Kapasitas: 90 orang, Gedung PPAG)",
     "PPAG-201": "Lacture Hall PPAG (Kapasitas: 160 orang, Gedung PPAG)",
     "PPAG-202": "Ruang Kuliah PPAG 202 (Kapasitas: 60 orang, Gedung PPAG)",
-    "PPAG-203": "Ruang Multifungsi (Kapasitas: 300 orang, Gedung PPAG)",
+    "PPAG-203": "Ruang Multifungsi (Kapasitas: 300 orang, Gedung PPAG; alias: ruang mulfung, mulfung, serbaguna ppag, mulfung ppag)",
     "G0-OR": "Operation Room Rektorat (Kapasitas: 50 orang, Gedung 0)",
-    "G9-AULA": "Aula Driekore - FE (Kapasitas: 250 orang, Gedung 9)",
+    "G9-AULA": "Aula Driekore - FE (Kapasitas: 250 orang, Gedung 9; alias: aula fe, driekore, aula driekore)",
     "G9-101": "Ruang Kuliah 9101 (Kapasitas: 60 orang, Gedung 9)",
     "G9-LAB1": "Laboratorium Komputer Komputasi Lanjut 1 (Kapasitas: 30 orang, Gedung 9)",
     "G9-LAB2": "Laboratorium Komputer Komputasi Lanjut 2 (Kapasitas: 30 orang, Gedung 9)",
@@ -143,8 +143,31 @@ class GeminiAgentClient:
         user_message: str,
         today: str,
         conversation_history: Optional[List[Dict[str, str]]] = None,
+        current_extraction: Optional[LLMBookingExtraction] = None,
     ) -> LLMBookingExtraction:
         """Mengekstrak informasi pemesanan menggunakan model Gemini dengan jaminan skema terstruktur."""
+        locked_context = ""
+        if current_extraction:
+            locked_parts = []
+            if current_extraction.room_name:
+                locked_parts.append(f"- Ruangan: {current_extraction.room_name}")
+            if current_extraction.event_name:
+                locked_parts.append(f"- Acara: {current_extraction.event_name}")
+            if current_extraction.booking_date:
+                locked_parts.append(f"- Tanggal: {current_extraction.booking_date}")
+            if current_extraction.start_time and current_extraction.end_time:
+                locked_parts.append(f"- Jam/Waktu: {current_extraction.start_time} - {current_extraction.end_time}")
+            if current_extraction.attendee_count:
+                locked_parts.append(f"- Estimasi Peserta: {current_extraction.attendee_count} orang")
+            if current_extraction.required_equipment:
+                locked_parts.append(f"- Peralatan: {', '.join(current_extraction.required_equipment)}")
+            if locked_parts:
+                locked_context = (
+                    "\n\nDATA TERVERIFIKASI DARI SESI SEJAUH INI (SUDAH TERKUNCI, JANGAN DIUBAH / JANGAN DITANYAKAN LAGI):\n"
+                    + "\n".join(locked_parts)
+                    + "\n*PENTING*: Jika jam atau tanggal sudah ada di atas, JANGAN bertanya soal jam/tanggal lagi!"
+                )
+
         system_instruction = f"""Anda adalah asisten AI fasilitas kampus akademik CampusFlow.
 Tugas Anda adalah memahami permintaan reservasi fasilitas/ruangan kampus dari pengguna secara cermat dan teliti.
 
@@ -152,7 +175,7 @@ KONTEKS SISTEM:
 - Tanggal hari ini (today): {today}
 - Ruangan resmi di kampus:
 {json.dumps(KNOWN_ROOMS, indent=2, ensure_ascii=False)}
-- Tipe peralatan yang dikenali: {KNOWN_EQUIPMENT}
+- Tipe peralatan yang dikenali: {KNOWN_EQUIPMENT}{locked_context}
 
 ATURAN PENTING (HUMAN-IN-THE-LOOP & ANTI-HALUSINASI):
 1. JANGAN PERNAH MENEBAK ATAU BERHALUSINASI TENTANG JAM ACARA!

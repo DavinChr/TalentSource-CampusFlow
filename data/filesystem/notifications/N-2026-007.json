@@ -1,0 +1,28 @@
+{
+  "notification_id": "N-2026-007",
+  "department_key": "it_support",
+  "department_name": "Dukungan TI & Multimedia",
+  "target_email": "it.support@campusflow.test",
+  "subject": "Permintaan Persiapan & Pengiriman Add-On Multimedia: BK-2027-001",
+  "payload": {
+    "booking_reference": "BK-2027-001",
+    "room_name": "PPAG-203",
+    "equipment": [
+      "projector",
+      "sound_system",
+      "microphone"
+    ],
+    "date": "2027-01-08",
+    "time": "08:00 - 11:00",
+    "notes": "Prasmanan, 230 kursi, 12 sofa dosen",
+    "add_on_equipment": [
+      "Proyektor Seminar Epson (PRJ-01)",
+      "Sound System Portable Yamaha (SND-02)",
+      "Mikrofon Clip-On Seminar (MIC-03)"
+    ],
+    "dispatch_notes": "Peralatan add-on portabel perlu dikirim dan disiapkan di ruangan oleh tim IT Support."
+  },
+  "booking_id": null,
+  "status": "SENT",
+  "sent_at": "2026-11-21T04:21:04Z"
+}

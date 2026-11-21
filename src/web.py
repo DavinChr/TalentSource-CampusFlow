@@ -106,33 +106,31 @@ async def handle_chat(request: Request):
         active_options = []
         session["active_options"] = []
 
-    # Ekstraksi dan penggabungan state kumulatif
+    # 1. Jalankan Deterministic Parser terlebih dahulu untuk mengunci pola pasti (jam, tanggal, alias, alat)
+    det_ext, active_options = _deterministic_extract(
+        user_msg=user_msg,
+        today_str=today,
+        prev_extraction=extraction,
+        active_options=active_options,
+    )
+    extraction = _merge_extractions(extraction, det_ext)
+
+    # 2. Jika ada LLM, perkaya dengan penalaran semantik (nama acara, catatan khusus/logistik)
+    #    dengan menyertakan data yang sudah terkunci agar tidak terjadi delusi / pertanyaan berulang
     if llm_client:
         try:
-            new_ext = llm_client.parse_user_request(
+            llm_ext = llm_client.parse_user_request(
                 user_message=user_msg,
                 today=today,
                 conversation_history=history[:-1],
+                current_extraction=extraction,
             )
-            extraction = _merge_extractions(extraction, new_ext)
+            extraction = _merge_extractions(extraction, llm_ext)
         except Exception:
-            det_ext, active_options = _deterministic_extract(
-                user_msg=user_msg,
-                today_str=today,
-                prev_extraction=extraction,
-                active_options=active_options,
-            )
-            extraction = _merge_extractions(extraction, det_ext)
-    else:
-        det_ext, active_options = _deterministic_extract(
-            user_msg=user_msg,
-            today_str=today,
-            prev_extraction=extraction,
-            active_options=active_options,
-        )
-        extraction = _merge_extractions(extraction, det_ext)
+            pass
 
     session["extraction"] = extraction
+    session["active_options"] = active_options
 
     # 0. Early Constraint & Fast-Fail Check:
     # Jika sudah terbukti tidak valid sejak awal (ruang renovasi, kapasitas kurang, alat tidak ada, tanggal lewat, bentrok)

@@ -1,0 +1,20 @@
+{
+  "notification_id": "N-2026-005",
+  "department_key": "it_support",
+  "department_name": "Dukungan TI & Multimedia",
+  "target_email": "it.support@campusflow.test",
+  "subject": "Permintaan Persiapan Multimedia: BK-2026-006",
+  "payload": {
+    "booking_reference": "BK-2026-006",
+    "room_name": "PPAG-202",
+    "equipment": [
+      "projector"
+    ],
+    "date": "2026-10-15",
+    "time": "09:00 - 11:00",
+    "notes": "Kursi diatur model U-shape."
+  },
+  "booking_id": null,
+  "status": "SENT",
+  "sent_at": "2026-11-21T04:21:04Z"
+}

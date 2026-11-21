@@ -1,0 +1,20 @@
+{
+  "notification_id": "N-2026-003",
+  "department_key": "academic_facilities",
+  "department_name": "Fasilitas Akademik",
+  "target_email": "facilities@campusflow.test",
+  "subject": "Konfirmasi Reservasi Ruangan: BK-2026-006",
+  "payload": {
+    "booking_reference": "BK-2026-006",
+    "room_name": "AUD-01",
+    "event_name": "workshop AI",
+    "date": "2026-09-23",
+    "time": "13:00 - 15:00",
+    "attendee_count": 100,
+    "requester": "FAC-001",
+    "notes": "Request jam 1 siang tidak ada kursi, meja tamu 3 dan 6 kursi"
+  },
+  "booking_id": null,
+  "status": "SENT",
+  "sent_at": "2026-11-21T04:21:03Z"
+}

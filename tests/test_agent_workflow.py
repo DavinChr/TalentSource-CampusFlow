@@ -439,4 +439,64 @@ async def test_notification_failure_graceful_handling(monkeypatch):
     assert audit_steps["send_notification"]["decision"] == "PARTIAL"
 
 
+@pytest.mark.asyncio
+async def test_security_notification_after_hours_and_json_persistence():
+    """SRS 3.6.2 & REQ-NTF-01, REQ-NTF-03: Notifikasi otomatis ke campus_security jika selesai > 18:00 dan file JSON terpisah."""
+    # Booking jam 19:00 - 21:00 (setelah jam kerja 18:00)
+    prompt = (
+        "Pesan Auditorium Utama untuk gladi resik konser 80 orang pada 23 September 2026 "
+        "jam 19:00 sampai 21:00, pastikan proyektor dan sound system siap."
+    )
+    initial_state = new_state(prompt, requester="FAC-001", today="2026-09-21")
+
+    final_state = await campusflow_agent.ainvoke(initial_state)
+
+    assert final_state["workflow_status"] == "COMPLETED"
+    assert final_state["booking_reference"] is not None
+
+    notifs = final_state["notification_details"]["notifications"]
+    # Harus ada: academic_facilities, it_support, dan campus_security
+    assert len(notifs) >= 3
+    dept_keys = [n.get("department_key") for n in notifs]
+    assert "campus_security" in dept_keys
+    assert "it_support" in dept_keys
+    assert "academic_facilities" in dept_keys
+
+    # REQ-NTF-03: Verifikasi file JSON mandiri terbuat di filesystem
+    notif_dir = BASE_DIR / "data" / "filesystem" / "notifications"
+    for n in notifs:
+        nid = n.get("notification_id")
+        if nid:
+            json_file = notif_dir / f"{nid}.json"
+            assert json_file.exists(), f"File notifikasi {json_file} tidak ditemukan!"
+
+
+@pytest.mark.asyncio
+async def test_audit_logs_batch_persisted_in_sqlite():
+    """REQ-AUD-01 & REQ-AUD-02: Memastikan seluruh jejak audit LangGraph tersimpan ke tabel audit_logs di database."""
+    prompt = (
+        "Pesan Auditorium Utama untuk rapat senat 100 orang pada 23 September 2026 "
+        "jam 13:00 sampai 15:00."
+    )
+    initial_state = new_state(prompt, requester="FAC-001", today="2026-09-21")
+
+    final_state = await campusflow_agent.ainvoke(initial_state)
+    assert final_state["workflow_status"] == "COMPLETED"
+
+    trace_id = final_state["trace_id"]
+    conn = sqlite3.connect(str(DB_PATH))
+    rows = conn.execute(
+        "SELECT step_name, workflow_status, decision FROM audit_logs WHERE trace_id = ? ORDER BY step_index ASC",
+        (trace_id,),
+    ).fetchall()
+    conn.close()
+
+    assert len(rows) > 0, "Tabel audit_logs harus terisi untuk trace_id ini!"
+    step_names = [r[0] for r in rows]
+    assert "parse_request" in step_names
+    assert "validate_requirements" in step_names
+    assert "create_booking" in step_names
+
+
+
 

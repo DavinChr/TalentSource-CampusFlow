@@ -8,6 +8,7 @@ Pengiriman notifikasi multi-departemen via campusflow-notification:
 - Jika ada yang gagal -> workflow_status = COMPLETED_PARTIAL (reservasi tetap sah).
 """
 
+from datetime import datetime, date
 import os
 from typing import Dict, Any
 from src.agent.state import AgentState, add_audit
@@ -78,6 +79,59 @@ async def send_notification(state: AgentState) -> Dict[str, Any]:
         if it_res.get("status") != "SENT":
             all_success = False
             errors.append(f"Gagal mengirim notifikasi ke {it_dept_code}.")
+
+    # 3. Notifikasi ke Unit Keamanan Kampus (campus_security) — SRS 3.6.2 & REQ-NTF-01
+    # Diterbitkan jika acara selesai di luar jam operasional (> 18:00) atau pada akhir pekan (Sabtu/Minggu)
+    is_after_hours = False
+    is_weekend = False
+
+    end_time_str = req.get("end_time") or ""
+    if end_time_str and ":" in end_time_str:
+        try:
+            parts = end_time_str.split(":")
+            if (int(parts[0]), int(parts[1])) > (18, 0):
+                is_after_hours = True
+        except Exception:
+            pass
+
+    booking_date_str = req.get("booking_date") or ""
+    if booking_date_str:
+        try:
+            dt = datetime.strptime(booking_date_str, "%Y-%m-%d").date()
+            if dt.weekday() in (5, 6):  # 5: Sabtu, 6: Minggu
+                is_weekend = True
+        except Exception:
+            pass
+
+    if is_after_hours or is_weekend:
+        reasons = []
+        if is_after_hours:
+            reasons.append(f"acara selesai pukul {end_time_str} (di luar jam kerja normal 18:00)")
+        if is_weekend:
+            reasons.append("acara diadakan pada akhir pekan")
+
+        sec_payload = {
+            "booking_reference": booking_ref,
+            "room_name": req["room_name"],
+            "event_name": req["event_name"],
+            "date": req["booking_date"],
+            "time": f"{req['start_time']} - {req['end_time']}",
+            "attendee_count": req["attendee_count"],
+            "requester": state["requester"],
+            "security_reason": " & ".join(reasons),
+            "instructions": "Mohon koordinasi pembukaan akses gedung/ruangan, pengawasan ketertiban fasilitas, dan penguncian fasilitas setelah acara selesai.",
+        }
+        sec_res = await call_notification("send_department_notification", {
+            "department_key": "campus_security",
+            "subject": f"Pemberitahuan Izin Fasilitas di Luar Jam Normal / Akhir Pekan: {booking_ref}",
+            "payload": sec_payload,
+        })
+        sec_res["payload"] = sec_payload
+        sec_res["subject"] = f"Pemberitahuan Izin Fasilitas di Luar Jam Normal / Akhir Pekan: {booking_ref}"
+        notifications_sent.append(sec_res)
+        if sec_res.get("status") != "SENT":
+            all_success = False
+            errors.append("Gagal mengirim notifikasi ke campus_security.")
 
     if all_success:
         next_status = "COMPLETED"

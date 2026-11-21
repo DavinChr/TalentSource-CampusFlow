@@ -467,6 +467,69 @@ def create_booking_transactional(
 
 
 # =============================================================================
+# Tool 7: record_audit_trail
+# =============================================================================
+@server.tool()
+def record_audit_trail(
+    trace_id: str,
+    audit_trail: List[Dict[str, Any]],
+    booking_id: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Menyimpan rekam jejak audit alur kerja (Audit Trail) secara batch ke tabel audit_logs.
+    Sesuai kebutuhan REQ-AUD-01 & REQ-AUD-02 (append-only log).
+    
+    Args:
+        trace_id: UUID pelacakan unik alur kerja.
+        audit_trail: Daftar kamus langkah audit (step_index, step_name, evidence, decision, next_state).
+        booking_id: ID reservasi di tabel bookings (opsional jika pemesanan gagal/ditolak).
+        
+    Returns:
+        Status penyimpanan dan jumlah baris yang dicatat.
+    """
+    if not audit_trail:
+        return {"status": "SUCCESS", "saved_count": 0}
+
+    conn = get_db_connection()
+    try:
+        with conn:
+            inserted = 0
+            for step in audit_trail:
+                step_idx = step.get("step_index", 0)
+                step_name = step.get("step_name", "UNKNOWN")
+                wf_status = step.get("next_state") or step.get("workflow_status") or "UNKNOWN"
+                decision = step.get("decision", "PASS")
+                evidence_raw = step.get("evidence")
+                created_at = step.get("timestamp") or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+                if isinstance(evidence_raw, (dict, list)):
+                    evidence_json = json.dumps(evidence_raw, ensure_ascii=False)
+                elif evidence_raw is not None:
+                    evidence_json = str(evidence_raw)
+                else:
+                    evidence_json = None
+
+                conn.execute(
+                    """
+                    INSERT INTO audit_logs (
+                        trace_id, booking_id, step_index, step_name,
+                        workflow_status, evidence_json, decision, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        trace_id, booking_id, step_idx, step_name,
+                        wf_status, evidence_json, decision, created_at,
+                    ),
+                )
+                inserted += 1
+            return {"status": "SUCCESS", "saved_count": inserted}
+    except Exception as e:
+        return {"status": "ERROR", "message": str(e)}
+    finally:
+        conn.close()
+
+
+# =============================================================================
 # Suite Uji Mandiri (Self-Check Harness)
 # =============================================================================
 async def run_self_check() -> bool:

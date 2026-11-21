@@ -314,21 +314,24 @@ async def run_interactive_session():
         active_options: List[Dict[str, Any]] = []
         extraction: Optional[LLMBookingExtraction] = None
 
+        conversation_history.append({"role": "user", "content": user_input})
+
+        # 1. Selalu jalankan ekstraksi deterministik untuk mengunci data pasti (waktu, tanggal, alias, alat)
+        det_ext, active_options = _deterministic_extract(user_input, today)
+        extraction = det_ext
+
+        # 2. Jika klien LLM aktif, perhalus dengan ekstraksi semantik dan teruskan slot terkunci
         if llm_client:
-            conversation_history.append({"role": "user", "content": user_input})
             try:
-                extraction = llm_client.parse_user_request(
+                llm_ext = llm_client.parse_user_request(
                     user_message=user_input,
                     today=today,
                     conversation_history=conversation_history[:-1],
+                    current_extraction=extraction,
                 )
+                extraction = _merge_extractions(extraction, llm_ext)
             except Exception as e:
-                print(f"⚠️ Kuota/Koneksi Gemini bermasalah ({e.__class__.__name__}).")
-                print("🔄 Mengalihkan ke Parser Deterministik & Rekomendasi Ruangan Cerdas...")
-                extraction, active_options = _deterministic_extract(user_input, today)
-        else:
-            conversation_history.append({"role": "user", "content": user_input})
-            extraction, active_options = _deterministic_extract(user_input, today)
+                print(f"⚠️ Kuota/Koneksi Gemini bermasalah ({e.__class__.__name__}). Menggunakan parser deterministik.")
 
         # 2. Early Constraint & Fast-Fail Check:
         # Jika sudah terbukti tidak valid sejak awal (ruang renovasi, kapasitas kurang, alat tidak ada, tanggal lewat, bentrok)
@@ -368,30 +371,27 @@ async def run_interactive_session():
 
             print("\n🔍 Memperbarui data reservasi...")
 
+            # 1. Jalankan ekstraksi deterministik untuk mengunci data pasti (misal waktu, alias ruangan, dll.)
+            det_ext, active_options = _deterministic_extract(
+                user_msg=clarification_reply,
+                today_str=today,
+                prev_extraction=extraction,
+                active_options=active_options,
+            )
+            extraction = _merge_extractions(extraction, det_ext)
+
+            # 2. Jika ada LLM, perhalus dengan ekstraksi semantik dan teruskan slot terkunci
             if llm_client:
                 try:
-                    new_ext = llm_client.parse_user_request(
+                    llm_ext = llm_client.parse_user_request(
                         user_message=clarification_reply,
                         today=today,
                         conversation_history=conversation_history[:-1],
+                        current_extraction=extraction,
                     )
-                    extraction = _merge_extractions(extraction, new_ext)
+                    extraction = _merge_extractions(extraction, llm_ext)
                 except Exception:
-                    det_ext, active_options = _deterministic_extract(
-                        user_msg=clarification_reply,
-                        today_str=today,
-                        prev_extraction=extraction,
-                        active_options=active_options,
-                    )
-                    extraction = _merge_extractions(extraction, det_ext)
-            else:
-                det_ext, active_options = _deterministic_extract(
-                    user_msg=clarification_reply,
-                    today_str=today,
-                    prev_extraction=extraction,
-                    active_options=active_options,
-                )
-                extraction = _merge_extractions(extraction, det_ext)
+                    pass
 
             # Cek kendala dini pada setiap jawaban baru
             early_check = check_early_constraints(extraction, today)

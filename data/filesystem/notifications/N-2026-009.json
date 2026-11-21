@@ -1,0 +1,20 @@
+{
+  "notification_id": "N-2026-009",
+  "department_key": "academic_facilities",
+  "department_name": "Fasilitas Akademik",
+  "target_email": "facilities@campusflow.test",
+  "subject": "Konfirmasi Reservasi Ruangan: BK-2026-006",
+  "payload": {
+    "booking_reference": "BK-2026-006",
+    "room_name": "SR-101",
+    "event_name": "sesi 1",
+    "date": "2026-09-25",
+    "time": "13:00 - 15:00",
+    "attendee_count": 20,
+    "requester": "FAC-001",
+    "notes": null
+  },
+  "booking_id": null,
+  "status": "SENT",
+  "sent_at": "2026-11-21T04:21:05Z"
+}

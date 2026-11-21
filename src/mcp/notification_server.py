@@ -51,6 +51,11 @@ DEPARTMENTS: Dict[str, Dict[str, str]] = {
         "email": "events@campusflow.test",
         "description": "Koordinasi acara besar, tamu rektorat, dan logistik khusus",
     },
+    "campus_security": {
+        "name": "Unit Keamanan & Ketertiban Kampus",
+        "email": "security@campusflow.test",
+        "description": "Pengamanan gedung, izin lembur di luar jam kerja normal, dan akses akhir pekan",
+    },
 }
 
 # Penyimpanan in-memory riwayat notifikasi sesi
@@ -124,6 +129,12 @@ def send_department_notification(
         )
         with open(OUTBOX_PATH, "a", encoding="utf-8") as f:
             f.write(log_line)
+
+        # REQ-NTF-03: Simpan berkas notifikasi JSON mandiri berformat N-YYYY-NNN.json
+        notif_dir = BASE_DIR / "data" / "filesystem" / "notifications"
+        notif_dir.mkdir(parents=True, exist_ok=True)
+        with open(notif_dir / f"{notif_id}.json", "w", encoding="utf-8") as fj:
+            json.dump(entry, fj, ensure_ascii=False, indent=2)
     except Exception:
         pass
 
