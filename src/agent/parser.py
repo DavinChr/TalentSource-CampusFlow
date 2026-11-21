@@ -94,12 +94,16 @@ _WEEKDAY_RE = re.compile(
 _WEEK_PHRASE_RE = re.compile(r"\b(?:(?:minggu|pekan)\s+(?:depan|ini)|(?:next|this)\s+week)\b", re.I)
 
 _SEP = r"(?:-|–|sampai(?:\s+dengan)?|sampe|s/d|hingga|to|until)"
+_PERIOD = r"(?:pagi|siang|sore|malam)"
 _T_MIN = re.compile(rf"\b(\d{{1,2}})[:.](\d{{2}})\s*{_SEP}\s*(\d{{1,2}})[:.](\d{{2}})\b", re.I)
 _T_CUE = re.compile(
-    rf"\b(?:jam|pukul|from|at)\s*(\d{{1,2}})(?:[:.](\d{{2}}))?\s*{_SEP}\s*(\d{{1,2}})(?:[:.](\d{{2}}))?\b",
+    rf"\b(?:jam|pukul|from|at)\s*(\d{{1,2}})(?:[:.](\d{{2}}))?(?:\s*({_PERIOD}))?\s*{_SEP}\s*(?:jam|pukul)?\s*(\d{{1,2}})(?:[:.](\d{{2}}))?(?:\s*({_PERIOD}))?\b",
     re.I,
 )
-_T_ONE = re.compile(r"\b(?:jam|pukul|from|at)\s*(\d{1,2})[:.](\d{2})\b", re.I)
+_T_ONE = re.compile(
+    rf"\b(?:jam|pukul|from|at)\s*(\d{{1,2}})(?:[:.](\d{{2}}))?(?:\s*({_PERIOD}))?\b",
+    re.I,
+)
 
 _ATT_RE = re.compile(
     r"\b(\d{1,4})\s*-?\s*(?:orang|peserta|pax|people|persons?|attendees|participants)\b", re.I
@@ -164,22 +168,66 @@ def _extract_dates(text: str, today: date):
 def _extract_times(text: str):
     ranges = set()
     bad: List[str] = []
+
+    def _adj(h: int, p: Optional[str]) -> int:
+        if not p:
+            return h
+        p = p.lower()
+        if p == "siang" and 1 <= h <= 4:
+            return h + 12
+        if p == "sore" and 1 <= h <= 6:
+            return h + 12
+        if p == "malam" and 1 <= h <= 11:
+            return h + 12
+        return h
+
+    # 1. Rentang waktu dengan pemisah
     for rx in (_T_MIN, _T_CUE):
         matches, text = _consume(rx, text)
         for m in matches:
-            h1, m1, h2, m2 = int(m[1]), int(m[2] or 0), int(m[3]), int(m[4] or 0)
+            groups = m.groups()
+            if len(groups) == 4:
+                # _T_MIN: h1, m1, h2, m2
+                h1, m1, h2, m2 = int(groups[0]), int(groups[1] or 0), int(groups[2]), int(groups[3] or 0)
+                p1, p2 = None, None
+            else:
+                # _T_CUE: h1, m1, p1, h2, m2, p2
+                h1, m1 = int(groups[0]), int(groups[1] or 0)
+                p1 = groups[2]
+                h2, m2 = int(groups[3]), int(groups[4] or 0)
+                p2 = groups[5]
+
+            # Pewarisan periode waktu jika hanya disebut di akhir (mis. '1 sampai 3 sore', '7 sampai 9 malam')
+            if p2 and not p1:
+                p2_l = p2.lower()
+                if p2_l == "sore" and 1 <= h1 <= 6:
+                    p1 = p2
+                elif p2_l == "malam" and 6 <= h1 <= 11:
+                    p1 = p2
+                elif p2_l == "siang" and 1 <= h1 <= 4:
+                    p1 = p2
+
+            h1 = _adj(h1, p1)
+            h2 = _adj(h2, p2)
+
             if max(h1, h2) > 23 or max(m1, m2) > 59:
                 bad.append(m.group(0).strip())
             else:
                 ranges.add((f"{h1:02d}:{m1:02d}", f"{h2:02d}:{m2:02d}"))
+
     singles = set()
     if not ranges and not bad:
         matches, text = _consume(_T_ONE, text)
         for m in matches:
-            if int(m[1]) > 23 or int(m[2]) > 59:
+            groups = m.groups()
+            h = int(groups[0])
+            m_val = int(groups[1] or 0)
+            p = groups[2] if len(groups) > 2 else None
+            h = _adj(h, p)
+            if h > 23 or m_val > 59:
                 bad.append(m.group(0).strip())
             else:
-                singles.add(f"{int(m[1]):02d}:{int(m[2]):02d}")
+                singles.add(f"{h:02d}:{m_val:02d}")
     return ranges, singles, bad, text
 
 
