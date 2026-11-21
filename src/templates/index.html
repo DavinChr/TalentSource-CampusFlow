@@ -8,13 +8,25 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Marked.js Markdown Parser CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     /* Custom scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    .chat-bubble { white-space: pre-wrap; word-break: break-word; }
+    .chat-bubble { word-break: break-word; }
+    .chat-bubble.user-msg { white-space: pre-wrap; }
+    .markdown-body p { margin-bottom: 0.6rem; }
+    .markdown-body p:last-child { margin-bottom: 0; }
+    .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-top: 0.25rem; margin-bottom: 0.6rem; }
+    .markdown-body ol { list-style-type: decimal; margin-left: 1.25rem; margin-top: 0.25rem; margin-bottom: 0.6rem; }
+    .markdown-body li { margin-bottom: 0.25rem; }
+    .markdown-body strong { font-weight: 700; color: #0f172a; }
+    .markdown-body em { font-style: italic; }
+    .markdown-body code { background: #e2e8f0; padding: 0.15rem 0.35rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.85em; color: #4338ca; }
+    .markdown-body blockquote { border-left: 3px solid #6366f1; padding-left: 0.75rem; margin: 0.5rem 0; color: #475569; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans h-screen flex flex-col antialiased">
@@ -118,6 +130,12 @@
                   class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm flex items-center space-x-1.5 shadow-sm transition disabled:opacity-50">
             <span>Kirim</span>
             <i data-lucide="send" class="w-4 h-4"></i>
+          </button>
+          <button type="button" id="btn-cancel"
+                  class="hidden bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-semibold px-4 py-2.5 rounded-xl text-sm flex items-center space-x-1.5 shadow-xs transition">
+            <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping mr-0.5"></span>
+            <span>Batal</span>
+            <i data-lucide="square" class="w-3.5 h-3.5 fill-rose-600"></i>
           </button>
         </form>
       </div>
@@ -226,6 +244,7 @@
     const chatForm = document.getElementById("chat-form");
     const userInput = document.getElementById("user-input");
     const btnSend = document.getElementById("btn-send");
+    const btnCancel = document.getElementById("btn-cancel");
     const btnReset = document.getElementById("btn-reset");
     const optionPillsContainer = document.getElementById("option-pills-container");
     const optionPills = document.getElementById("option-pills");
@@ -271,6 +290,60 @@
       if (allRoomsCache.length === 0) loadRooms();
     });
 
+    // Parser Markdown: Render format teks bold, italic, list, dan code dengan rapi
+    function renderMarkdown(text) {
+      if (!text) return "";
+      if (typeof marked !== "undefined" && typeof marked.parse === "function") {
+        try {
+          return marked.parse(text, { breaks: true, gfm: true });
+        } catch (e) {
+          console.warn("marked.parse error, using fallback parser:", e);
+        }
+      }
+
+      // Fallback parser jika offline / tanpa CDN
+      let safe = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      // Bold: **text** atau __text__
+      safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>');
+      safe = safe.replace(/__(.+?)__/g, '<strong class="font-bold text-slate-900">$1</strong>');
+
+      // Italic: *text* (bukan bullet atau ganda)
+      safe = safe.replace(/(^|[^\*])\*([^\*\n]+)\*([^\*]|$)/g, '$1<em class="italic">$2</em>$3');
+
+      // Inline code: `code`
+      safe = safe.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-slate-200 text-indigo-700 rounded font-mono text-xs">$1</code>');
+
+      // List format: - item atau * item
+      const lines = safe.split("\n");
+      let inList = false;
+      const res = [];
+      for (const line of lines) {
+        const m = line.match(/^(\s*)([-*]|\d+\.)\s+(.*)$/);
+        if (m) {
+          if (!inList) {
+            res.push('<ul class="my-1.5 space-y-1 pl-4 list-disc">');
+            inList = true;
+          }
+          res.push(`<li>${m[3]}</li>`);
+        } else {
+          if (inList) {
+            res.push('</ul>');
+            inList = false;
+          }
+          res.push(line);
+        }
+      }
+      if (inList) res.push('</ul>');
+
+      let html = res.join("\n");
+      html = html.replace(/(?<!(<\/ul>|<\/li>|<ul[^>]*>))\n/g, "<br>");
+      return html;
+    }
+
     // Helper: Add chat bubble
     function appendMessage(role, text) {
       const isUser = role === "user";
@@ -286,10 +359,15 @@
       const bubble = document.createElement("div");
       bubble.className = `chat-bubble text-sm leading-relaxed p-4 rounded-2xl max-w-xl shadow-xs ${
         isUser
-          ? "bg-indigo-600 text-white rounded-tr-sm"
-          : "bg-slate-50 border border-slate-200/80 text-slate-800 rounded-tl-sm"
+          ? "bg-indigo-600 text-white rounded-tr-sm user-msg"
+          : "bg-slate-50 border border-slate-200/80 text-slate-800 rounded-tl-sm markdown-body"
       }`;
-      bubble.innerText = text;
+      
+      if (isUser) {
+        bubble.innerText = text;
+      } else {
+        bubble.innerHTML = renderMarkdown(text);
+      }
 
       wrapper.appendChild(avatar);
       wrapper.appendChild(bubble);
@@ -321,14 +399,39 @@
       lucide.createIcons();
     }
 
-    // Fungsi pengiriman pesan chat utama
+    let isSubmitting = false;
+    let currentAbortController = null;
+
+    // Tombol Batal / Stop saat request sedang berjalan
+    btnCancel.addEventListener("click", () => {
+      if (currentAbortController) {
+        currentAbortController.abort();
+      }
+    });
+
+    // Fungsi pengiriman pesan chat utama (dilengkapi Anti-Double Submit & Fitur Batal)
     async function submitChatMessage(rawMsg) {
+      if (isSubmitting) return; // Mencegah double-message jika tombol ditekan berulang kali
       const message = (rawMsg || "").trim();
       if (!message) return;
 
+      isSubmitting = true;
+      currentAbortController = new AbortController();
+
       appendMessage("user", message);
       userInput.value = "";
-      btnSend.disabled = true;
+      btnSend.classList.add("hidden");
+      btnCancel.classList.remove("hidden");
+      userInput.disabled = true;
+      lucide.createIcons();
+
+      // Kunci tombol rekomendasi dan contoh cepat agar tidak bisa ditekan ganda saat proses berjalan
+      optionPillsContainer.classList.add("pointer-events-none", "opacity-50");
+      document.querySelectorAll(".quick-chip").forEach(c => c.disabled = true);
+
+      // Pastikan loader lama dibersihkan sebelum membuat loader baru
+      const existingLoader = document.getElementById("loading-bubble");
+      if (existingLoader) existingLoader.remove();
 
       // Loading bubble
       const loadingWrap = document.createElement("div");
@@ -348,6 +451,7 @@
         const res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: currentAbortController.signal,
           body: JSON.stringify({
             message: message,
             today: refDateInput.value,
@@ -396,8 +500,13 @@
         const loader = document.getElementById("loading-bubble");
         if (loader) loader.remove();
 
-        // Kembalikan teks pengguna ke input box agar tidak hilang jika terjadi error / rate limit
+        // Kembalikan teks pengguna ke input box agar tidak hilang jika terjadi error / rate limit / cancel
         userInput.value = message;
+
+        if (err.name === "AbortError") {
+          appendMessage("assistant", "⏹️ *Permintaan telah dibatalkan oleh pengguna.*");
+          return;
+        }
 
         let errMsg = "Terjadi kesalahan saat berkomunikasi dengan server asisten.";
         const errLower = (err.message || "").toLowerCase();
@@ -410,7 +519,14 @@
         }
         appendMessage("assistant", errMsg);
       } finally {
+        isSubmitting = false;
+        currentAbortController = null;
+        btnCancel.classList.add("hidden");
+        btnSend.classList.remove("hidden");
         btnSend.disabled = false;
+        userInput.disabled = false;
+        optionPillsContainer.classList.remove("pointer-events-none", "opacity-50");
+        document.querySelectorAll(".quick-chip").forEach(c => c.disabled = false);
         userInput.focus();
         loadOutboxHistory();
       }
