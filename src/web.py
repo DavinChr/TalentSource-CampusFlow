@@ -8,14 +8,14 @@ dan pemantauan notifikasi departemen kampus secara real-time.
 """
 
 import asyncio
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 import json
 import logging
 from pathlib import Path
 import re
 import sqlite3
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import warnings
 
 # Redam log eksternal
@@ -40,6 +40,7 @@ from starlette.requests import Request
 from src.agent.llm import GeminiAgentClient, LLMBookingExtraction
 from src.agent.graph import campusflow_agent
 from src.agent.state import new_state
+from src.agent.mcp_client import call_db, call_notification
 from src.agent.early_validator import check_early_constraints
 from src.cli import (
     _merge_extractions,
@@ -70,8 +71,42 @@ def _get_session(session_id: str) -> Dict[str, Any]:
             "extraction": None,
             "conversation_history": [],
             "active_options": [],
+            "last_confirmed_booking": None,
         }
     return sessions[session_id]
+
+
+def _is_amendment_request(user_msg: str, last_booking: Optional[Dict[str, Any]]) -> Tuple[bool, str]:
+    """Mendeteksi apakah pesan pengguna merupakan tambahan fasilitas/catatan atau ralat untuk reservasi yang baru saja dibuat."""
+    if not last_booking or not last_booking.get("booking_reference"):
+        return False, ""
+
+    msg_l = user_msg.lower()
+
+    # 1. Deteksi ralat waktu/jadwal
+    reschedule_cues = [
+        "ralat jam", "ganti jam", "ubah jam", "geser jam", "ganti tanggal",
+        "ubah tanggal", "ralat tanggal", "jadwalnya ganti", "jamnya ganti", "jamnya diubah",
+    ]
+    if any(cue in msg_l for cue in reschedule_cues):
+        return True, "reschedule"
+
+    # 2. Deteksi penambahan logistik / fasilitas / catatan
+    note_cues = [
+        "lupa", "tambah", "tambahin", "tambahan", "perlu", "kurang", "meja", "kursi",
+        "taplak", "proyektor", "mic", "catatan", "sama kalau ada", "boleh minta",
+        "bisa sekalian", "sama tolong", "tolong siapin", "tolong sediain", "sedia",
+        "jangan lupa", "kasih juga", "pasang juga", "minta tolong", "tambahi", "sofa",
+    ]
+    if any(cue in msg_l for cue in note_cues):
+        new_room_cues = [
+            "sekarang pesan", "sekarang mau pinjam", "mau booking ruangan lain",
+            "booking baru", "pesan lagi", "pinjam lagi",
+        ]
+        if not any(nrc in msg_l for nrc in new_room_cues):
+            return True, "notes"
+
+    return False, ""
 
 
 async def handle_index(request: Request):
@@ -98,6 +133,173 @@ async def handle_chat(request: Request):
 
     today = custom_today or date.today().isoformat()
     history.append({"role": "user", "content": user_msg})
+
+    last_booking = session.get("last_confirmed_booking")
+
+    # 0. Skenario Edit / Penambahan Fasilitas pada Reservasi yang Baru Saja Dibuat
+    is_amend, amend_type = _is_amendment_request(user_msg, last_booking)
+    if is_amend and last_booking:
+        last_ref = last_booking["booking_reference"]
+        now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        if amend_type == "notes":
+            upd_res = await call_db("update_booking_notes", {
+                "booking_reference": last_ref,
+                "additional_notes": user_msg,
+            })
+            if upd_res.get("status") == "UPDATED":
+                notifications_sent = []
+                fac_payload = {
+                    "booking_reference": last_ref,
+                    "room_name": last_booking["room_name"],
+                    "event_name": last_booking.get("event_name"),
+                    "date": last_booking["booking_date"],
+                    "time": f"{last_booking['start_time']} - {last_booking['end_time']}",
+                    "added_logistics": user_msg,
+                    "total_notes": upd_res.get("updated_notes"),
+                }
+                fac_res = await call_notification("send_department_notification", {
+                    "department_key": "academic_facilities",
+                    "subject": f"Pembaruan Fasilitas & Catatan Logistik: {last_ref}",
+                    "payload": fac_payload,
+                })
+                fac_res["payload"] = fac_payload
+                fac_res["subject"] = f"Pembaruan Fasilitas & Catatan Logistik: {last_ref}"
+                notifications_sent.append(fac_res)
+
+                needs_it = any(w in user_msg.lower() for w in ("mic", "mikrofon", "proyektor", "projector", "sound", "speaker", "audio", "multimedia"))
+                if needs_it:
+                    it_payload = {
+                        "booking_reference": last_ref,
+                        "room_name": last_booking["room_name"],
+                        "date": last_booking["booking_date"],
+                        "time": f"{last_booking['start_time']} - {last_booking['end_time']}",
+                        "added_equipment_request": user_msg,
+                        "updated_notes": upd_res.get("updated_notes"),
+                    }
+                    it_res = await call_notification("send_department_notification", {
+                        "department_key": "it_support",
+                        "subject": f"Pembaruan Kebutuhan Multimedia: {last_ref}",
+                        "payload": it_payload,
+                    })
+                    it_res["payload"] = it_payload
+                    it_res["subject"] = f"Pembaruan Kebutuhan Multimedia: {last_ref}"
+                    notifications_sent.append(it_res)
+
+                audit_step = {
+                    "step_index": 1,
+                    "step_name": "amend_booking_notes",
+                    "decision": "UPDATED",
+                    "next_state": "BOOKING_AMENDED",
+                    "evidence": {"added_notes": user_msg, "booking_reference": last_ref},
+                    "timestamp": now_iso,
+                }
+                await call_db("record_audit_trail", {
+                    "trace_id": f"trace-amend-{last_ref.lower()}",
+                    "audit_trail": [audit_step],
+                    "booking_id": last_booking.get("booking_id"),
+                })
+
+                session["last_confirmed_booking"]["notes"] = upd_res.get("updated_notes")
+
+                reply_msg = (
+                    f"✅ Catatan dan permintaan fasilitas tambahan untuk reservasi **{last_ref}** berhasil diperbarui!\n\n"
+                    f"• Ruangan: {last_booking['room_name']}\n"
+                    f"• Jadwal: {last_booking['booking_date']} ({last_booking['start_time']} - {last_booking['end_time']} WIB)\n"
+                    f"• Tambahan Permintaan: {user_msg}\n"
+                    f"• Total Catatan Logistik: {upd_res.get('updated_notes')}\n\n"
+                    f"📢 Notifikasi pembaruan telah otomatis diteruskan ke tim Fasilitas Akademik"
+                    + (" & Dukungan TI/Multimedia." if needs_it else " Kampus.")
+                )
+                history.append({"role": "assistant", "content": reply_msg})
+
+                return JSONResponse({
+                    "status": "BOOKING_AMENDED",
+                    "reply": reply_msg,
+                    "booking_reference": last_ref,
+                    "booking": upd_res,
+                    "audit_trail": [audit_step],
+                    "notifications": notifications_sent,
+                    "equipment_results": [],
+                    "errors": [],
+                })
+
+        elif amend_type == "reschedule":
+            det_ext, _ = _deterministic_extract(user_msg, today)
+            new_date = det_ext.booking_date
+            new_start = det_ext.start_time
+            new_end = det_ext.end_time
+
+            res = await call_db("reschedule_booking", {
+                "booking_reference": last_ref,
+                "new_date": new_date,
+                "new_start_time": new_start,
+                "new_end_time": new_end,
+            })
+            if res.get("status") == "RESCHEDULED":
+                notifications_sent = []
+                fac_payload = {
+                    "booking_reference": last_ref,
+                    "room_name": last_booking["room_name"],
+                    "old_schedule": f"{res['old_date']} ({res['old_time']})",
+                    "new_schedule": f"{res['booking_date']} ({res['start_time']} - {res['end_time']})",
+                }
+                fac_res = await call_notification("send_department_notification", {
+                    "department_key": "academic_facilities",
+                    "subject": f"Perubahan Jadwal Reservasi: {last_ref}",
+                    "payload": fac_payload,
+                })
+                notifications_sent.append(fac_res)
+
+                audit_step = {
+                    "step_index": 1,
+                    "step_name": "reschedule_booking",
+                    "decision": "RESCHEDULED",
+                    "next_state": "BOOKING_RESCHEDULED",
+                    "evidence": res,
+                    "timestamp": now_iso,
+                }
+                await call_db("record_audit_trail", {
+                    "trace_id": f"trace-reschedule-{last_ref.lower()}",
+                    "audit_trail": [audit_step],
+                    "booking_id": last_booking.get("booking_id"),
+                })
+
+                session["last_confirmed_booking"]["booking_date"] = res["booking_date"]
+                session["last_confirmed_booking"]["start_time"] = res["start_time"]
+                session["last_confirmed_booking"]["end_time"] = res["end_time"]
+
+                reply_msg = (
+                    f"✅ Jadwal reservasi **{last_ref}** ({last_booking['room_name']}) berhasil diubah!\n\n"
+                    f"• Jadwal Lama: {res['old_date']} ({res['old_time']})\n"
+                    f"• Jadwal Baru: {res['booking_date']} ({res['start_time']} - {res['end_time']} WIB)\n\n"
+                    f"📢 Notifikasi perubahan jadwal telah otomatis dikirimkan ke departemen terkait."
+                )
+                history.append({"role": "assistant", "content": reply_msg})
+
+                return JSONResponse({
+                    "status": "BOOKING_RESCHEDULED",
+                    "reply": reply_msg,
+                    "booking_reference": last_ref,
+                    "booking": res,
+                    "audit_trail": [audit_step],
+                    "notifications": notifications_sent,
+                    "equipment_results": [],
+                    "errors": [],
+                })
+            elif res.get("status") == "CONFLICT":
+                reply_msg = f"❌ Perubahan jadwal tidak dapat diproses: {res.get('message')}"
+                history.append({"role": "assistant", "content": reply_msg})
+                return JSONResponse({
+                    "status": "CONFLICT",
+                    "reply": reply_msg,
+                    "options": [],
+                    "booking": last_booking,
+                    "audit_trail": [],
+                    "notifications": [],
+                    "equipment_results": [],
+                    "errors": [res.get("message")],
+                })
 
     # Cek pemilihan opsi nomor sebelumnya (misal [1], [2], dll.)
     selected_option = resolve_option_selection(user_msg, active_options)
@@ -267,6 +469,21 @@ async def handle_chat(request: Request):
 
     history.append({"role": "assistant", "content": summary})
 
+    # Simpan konteks reservasi terakhir untuk mendukung skenario revisi/penambahan fasilitas (Amendment)
+    if status in ("COMPLETED", "COMPLETED_PARTIAL"):
+        session["last_confirmed_booking"] = {
+            "booking_reference": final_state.get("booking_reference"),
+            "booking_id": final_state.get("booking_id"),
+            "room_name": (final_state.get("selected_room") or {}).get("room_name") or (extraction.room_name if extraction else None),
+            "room_code": (final_state.get("selected_room") or {}).get("room_code") or (extraction.room_name if extraction else None),
+            "event_name": extraction.event_name if extraction else "Kegiatan Kampus",
+            "booking_date": extraction.booking_date if extraction else None,
+            "start_time": extraction.start_time if extraction else None,
+            "end_time": extraction.end_time if extraction else None,
+            "attendee_count": extraction.attendee_count if extraction else None,
+            "notes": extraction.notes if extraction else None,
+        }
+
     # Reset extraction untuk pemesanan berikutnya pada sesi ini
     session["extraction"] = None
     session["active_options"] = []
@@ -294,6 +511,7 @@ async def handle_reset(request: Request):
             "extraction": None,
             "conversation_history": [],
             "active_options": [],
+            "last_confirmed_booking": None,
         }
     return JSONResponse({"status": "RESET", "session_id": session_id})
 

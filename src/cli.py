@@ -14,7 +14,7 @@ Fitur Utama:
 """
 
 import asyncio
-from datetime import date
+from datetime import date, datetime, timezone
 import json
 import logging
 import os
@@ -53,12 +53,46 @@ from src.agent.parser import parse_request_text
 from src.agent.llm import GeminiAgentClient, LLMBookingExtraction
 from src.agent.graph import campusflow_agent
 from src.agent.state import new_state
+from src.agent.mcp_client import call_db, call_notification
 from src.agent.room_recommender import (
     find_room_recommendations,
     format_room_options_prompt,
     resolve_option_selection,
 )
 from src.agent.early_validator import check_early_constraints
+
+
+def _is_amendment_request(user_msg: str, last_booking: Optional[Dict[str, Any]]) -> Tuple[bool, str]:
+    """Mendeteksi apakah pesan pengguna merupakan tambahan fasilitas/catatan atau ralat untuk reservasi yang baru saja dibuat."""
+    if not last_booking or not last_booking.get("booking_reference"):
+        return False, ""
+
+    msg_l = user_msg.lower()
+
+    # 1. Deteksi ralat waktu/jadwal
+    reschedule_cues = [
+        "ralat jam", "ganti jam", "ubah jam", "geser jam", "ganti tanggal",
+        "ubah tanggal", "ralat tanggal", "jadwalnya ganti", "jamnya ganti", "jamnya diubah",
+    ]
+    if any(cue in msg_l for cue in reschedule_cues):
+        return True, "reschedule"
+
+    # 2. Deteksi penambahan logistik / fasilitas / catatan
+    note_cues = [
+        "lupa", "tambah", "tambahin", "tambahan", "perlu", "kurang", "meja", "kursi",
+        "taplak", "proyektor", "mic", "catatan", "sama kalau ada", "boleh minta",
+        "bisa sekalian", "sama tolong", "tolong siapin", "tolong sediain", "sedia",
+        "jangan lupa", "kasih juga", "pasang juga", "minta tolong", "tambahi", "sofa",
+    ]
+    if any(cue in msg_l for cue in note_cues):
+        new_room_cues = [
+            "sekarang pesan", "sekarang mau pinjam", "mau booking ruangan lain",
+            "booking baru", "pesan lagi", "pinjam lagi",
+        ]
+        if not any(nrc in msg_l for nrc in new_room_cues):
+            return True, "notes"
+
+    return False, ""
 
 
 def _merge_extractions(old: Optional[LLMBookingExtraction], new: LLMBookingExtraction) -> LLMBookingExtraction:
@@ -294,6 +328,7 @@ async def run_interactive_session():
         print("💡 Mengaktifkan Mode Parser Deterministik Terstruktur (REQ-NLU-05).\n")
 
     conversation_history = []
+    last_confirmed_booking: Optional[Dict[str, Any]] = None
 
     while True:
         try:
@@ -307,6 +342,57 @@ async def run_interactive_session():
         if user_input.lower() in ("exit", "keluar", "q"):
             print("Terima kasih telah menggunakan CampusFlow.")
             break
+
+        # 0. Skenario Revisi / Penambahan Catatan Fasilitas (Amendment)
+        is_amend, amend_type = _is_amendment_request(user_input, last_confirmed_booking)
+        if is_amend and last_confirmed_booking:
+            print("\n🔄 Mendeteksi pembaruan pada reservasi sebelumnya...")
+            last_ref = last_confirmed_booking["booking_reference"]
+            now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            if amend_type == "notes":
+                upd_res = await call_db("update_booking_notes", {
+                    "booking_reference": last_ref,
+                    "additional_notes": user_input,
+                })
+                if upd_res.get("status") == "UPDATED":
+                    await call_notification("send_department_notification", {
+                        "department_key": "academic_facilities",
+                        "subject": f"Pembaruan Fasilitas & Catatan Logistik: {last_ref}",
+                        "payload": {
+                            "booking_reference": last_ref,
+                            "room_name": last_confirmed_booking["room_name"],
+                            "added_logistics": user_input,
+                            "updated_notes": upd_res.get("updated_notes"),
+                        },
+                    })
+                    print(f"\n✅ Catatan fasilitas tambahan untuk reservasi [{last_ref}] berhasil diperbarui!")
+                    print(f"   • Ruangan: {last_confirmed_booking['room_name']}")
+                    print(f"   • Tambahan Permintaan: {user_input}")
+                    print(f"   • Total Catatan Logistik: {upd_res.get('updated_notes')}")
+                    print(f"📢 Notifikasi pembaruan telah otomatis diteruskan ke departemen terkait.")
+                    last_confirmed_booking["notes"] = upd_res.get("updated_notes")
+                    continue
+            elif amend_type == "reschedule":
+                det_ext, _ = _deterministic_extract(user_input, today)
+                res = await call_db("reschedule_booking", {
+                    "booking_reference": last_ref,
+                    "new_date": det_ext.booking_date,
+                    "new_start_time": det_ext.start_time,
+                    "new_end_time": det_ext.end_time,
+                })
+                if res.get("status") == "RESCHEDULED":
+                    print(f"\n✅ Jadwal reservasi [{last_ref}] berhasil diubah!")
+                    print(f"   • Jadwal Lama: {res['old_date']} ({res['old_time']})")
+                    print(f"   • Jadwal Baru: {res['booking_date']} ({res['start_time']} - {res['end_time']} WIB)")
+                    print(f"📢 Notifikasi perubahan jadwal telah otomatis dikirimkan ke departemen terkait.")
+                    last_confirmed_booking["booking_date"] = res["booking_date"]
+                    last_confirmed_booking["start_time"] = res["start_time"]
+                    last_confirmed_booking["end_time"] = res["end_time"]
+                    continue
+                else:
+                    print(f"\n❌ Perubahan jadwal gagal: {res.get('message')}")
+                    continue
 
         print("\n🔍 Menganalisis permintaan Anda...")
 
@@ -438,6 +524,17 @@ async def run_interactive_session():
         if status in ("COMPLETED", "COMPLETED_PARTIAL"):
             ref = final_state.get("booking_reference")
             print(f"✅ RESERVASI BERHASIL! Nomor Referensi: {ref}")
+            last_confirmed_booking = {
+                "booking_reference": ref,
+                "booking_id": final_state.get("booking_id"),
+                "room_name": (final_state.get("selected_room") or {}).get("room_name") or (extraction.room_name if extraction else None),
+                "event_name": extraction.event_name if extraction else "Kegiatan Kampus",
+                "booking_date": extraction.booking_date if extraction else None,
+                "start_time": extraction.start_time if extraction else None,
+                "end_time": extraction.end_time if extraction else None,
+                "attendee_count": extraction.attendee_count if extraction else None,
+                "notes": extraction.notes if extraction else None,
+            }
         else:
             print("❌ PERMINTAAN DITOLAK / DIBATALKAN")
             for err in final_state.get("errors", []):

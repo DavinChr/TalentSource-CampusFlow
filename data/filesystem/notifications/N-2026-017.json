@@ -1,0 +1,19 @@
+{
+  "notification_id": "N-2026-017",
+  "department_key": "academic_facilities",
+  "department_name": "Fasilitas Akademik",
+  "target_email": "facilities@campusflow.test",
+  "subject": "Pembaruan Fasilitas & Catatan Logistik: BK-2026-006",
+  "payload": {
+    "booking_reference": "BK-2026-006",
+    "room_name": "PPAG-202",
+    "event_name": "workshop AI",
+    "date": "2026-12-28",
+    "time": "09:00 - 11:00",
+    "added_logistics": "aduh lupa juga, perlu meja registrasi 2 biji, sama kursi tambahan 4 deh, sama kalau ada taplak meja mau",
+    "total_notes": "pastikan proyektor siap; aduh lupa juga, perlu meja registrasi 2 biji, sama kursi tambahan 4 deh, sama kalau ada taplak meja mau"
+  },
+  "booking_id": null,
+  "status": "SENT",
+  "sent_at": "2026-11-21T07:32:56Z"
+}

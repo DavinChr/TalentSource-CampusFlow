@@ -118,6 +118,7 @@ def check_booking_conflicts(
     booking_date: str,
     start_time: str,
     end_time: str,
+    exclude_booking_reference: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Memeriksa bentrok reservasi menggunakan room_id numerik pada tanggal dan rentang jam tertentu.
@@ -129,6 +130,7 @@ def check_booking_conflicts(
         booking_date: Tanggal reservasi (format: 'YYYY-MM-DD').
         start_time: Waktu mulai (format: 'HH:MM', contoh '09:00').
         end_time: Waktu selesai (format: 'HH:MM', contoh '11:00').
+        exclude_booking_reference: Nomor referensi reservasi yang dikecualikan (opsional).
     """
     with get_db_connection() as conn:
         query = """
@@ -140,7 +142,12 @@ def check_booking_conflicts(
               AND start_time < ?
               AND end_time > ?
         """
-        rows = conn.execute(query, (room_id, booking_date, end_time, start_time)).fetchall()
+        params = [room_id, booking_date, end_time, start_time]
+        if exclude_booking_reference:
+            query += " AND booking_reference != ?"
+            params.append(exclude_booking_reference.strip().upper())
+
+        rows = conn.execute(query, tuple(params)).fetchall()
         conflicts = [
             {
                 "booking_id": r["id"],
@@ -166,6 +173,7 @@ def query_room_availability(
     booking_date: str,
     start_time: str,
     end_time: str,
+    exclude_booking_reference: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Memeriksa apakah suatu ruangan berstatus aktif dan tersedia (tanpa bentrok)
@@ -176,6 +184,7 @@ def query_room_availability(
         booking_date: Tanggal yang diajukan (YYYY-MM-DD).
         start_time: Waktu mulai (HH:MM).
         end_time: Waktu selesai (HH:MM).
+        exclude_booking_reference: Nomor referensi reservasi yang dikecualikan (opsional).
     """
     with get_db_connection() as conn:
         room = _resolve_room(conn, room_name)
@@ -200,6 +209,7 @@ def query_room_availability(
             booking_date=booking_date,
             start_time=start_time,
             end_time=end_time,
+            exclude_booking_reference=exclude_booking_reference,
         )
 
         if conflict_result["has_conflict"]:
@@ -527,6 +537,148 @@ def record_audit_trail(
         return {"status": "ERROR", "message": str(e)}
     finally:
         conn.close()
+
+
+# =============================================================================
+# Tool 8: update_booking_notes
+# =============================================================================
+@server.tool()
+def update_booking_notes(
+    booking_reference: str,
+    additional_notes: str,
+) -> Dict[str, Any]:
+    """
+    Menambahkan catatan atau permintaan logistik fasilitas ke pemesanan yang sudah ada.
+    
+    Args:
+        booking_reference: Nomor referensi pemesanan (contoh: 'BK-2026-004').
+        additional_notes: Catatan atau perlengkapan tambahan yang ingin ditambahkan.
+    """
+    ref_clean = booking_reference.strip().upper()
+    notes_clean = additional_notes.strip()
+    if not notes_clean:
+        return {"status": "NOOP", "message": "Catatan tambahan kosong."}
+
+    with get_db_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT b.id, b.booking_reference, b.event_name, b.booking_date, b.start_time, b.end_time,
+                   b.attendee_count, b.notes, r.room_name, r.room_code
+            FROM bookings b
+            JOIN rooms r ON b.room_id = r.id
+            WHERE b.booking_reference = ? AND b.status = 'CONFIRMED'
+            """,
+            (ref_clean,),
+        ).fetchone()
+
+        if not row:
+            return {
+                "status": "NOT_FOUND",
+                "message": f"Reservasi aktif dengan kode '{ref_clean}' tidak ditemukan.",
+            }
+
+        old_notes = row["notes"] or ""
+        if old_notes:
+            updated_notes = f"{old_notes}; {notes_clean}"
+        else:
+            updated_notes = notes_clean
+
+        conn.execute(
+            "UPDATE bookings SET notes = ? WHERE id = ?",
+            (updated_notes, row["id"]),
+        )
+        conn.commit()
+
+        return {
+            "status": "UPDATED",
+            "booking_id": row["id"],
+            "booking_reference": ref_clean,
+            "room_name": row["room_name"],
+            "room_code": row["room_code"],
+            "event_name": row["event_name"],
+            "booking_date": row["booking_date"],
+            "start_time": row["start_time"],
+            "end_time": row["end_time"],
+            "attendee_count": row["attendee_count"],
+            "old_notes": old_notes,
+            "updated_notes": updated_notes,
+            "added_notes": notes_clean,
+        }
+
+
+# =============================================================================
+# Tool 9: reschedule_booking
+# =============================================================================
+@server.tool()
+def reschedule_booking(
+    booking_reference: str,
+    new_date: Optional[str] = None,
+    new_start_time: Optional[str] = None,
+    new_end_time: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Mengubah tanggal atau jam pemesanan yang sudah ada tanpa bentrok dengan dirinya sendiri.
+    
+    Args:
+        booking_reference: Nomor referensi pemesanan (contoh: 'BK-2026-004').
+        new_date: Tanggal baru (YYYY-MM-DD, opsional).
+        new_start_time: Jam mulai baru (HH:MM, opsional).
+        new_end_time: Jam selesai baru (HH:MM, opsional).
+    """
+    ref_clean = booking_reference.strip().upper()
+    with get_db_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT b.id, b.room_id, b.booking_reference, b.event_name, b.booking_date,
+                   b.start_time, b.end_time, r.room_name, r.room_code
+            FROM bookings b
+            JOIN rooms r ON b.room_id = r.id
+            WHERE b.booking_reference = ? AND b.status = 'CONFIRMED'
+            """,
+            (ref_clean,),
+        ).fetchone()
+
+        if not row:
+            return {"status": "NOT_FOUND", "message": f"Reservasi '{ref_clean}' tidak ditemukan."}
+
+        target_date = new_date or row["booking_date"]
+        target_start = new_start_time or row["start_time"]
+        target_end = new_end_time or row["end_time"]
+
+        # Cek bentrok dengan reservasi lain (mengecualikan reservasi ini sendiri)
+        conflict_res = check_booking_conflicts(
+            room_id=row["room_id"],
+            booking_date=target_date,
+            start_time=target_start,
+            end_time=target_end,
+            exclude_booking_reference=ref_clean,
+        )
+        if conflict_res["has_conflict"]:
+            c = conflict_res["conflicts"][0]
+            return {
+                "status": "CONFLICT",
+                "message": f"Jadwal baru bentrok dengan acara '{c['event_name']}' ({c['start_time']} - {c['end_time']}).",
+                "conflicts": conflict_res["conflicts"],
+            }
+
+        conn.execute(
+            "UPDATE bookings SET booking_date = ?, start_time = ?, end_time = ? WHERE id = ?",
+            (target_date, target_start, target_end, row["id"]),
+        )
+        conn.commit()
+
+        return {
+            "status": "RESCHEDULED",
+            "booking_reference": ref_clean,
+            "room_name": row["room_name"],
+            "room_code": row["room_code"],
+            "event_name": row["event_name"],
+            "booking_date": target_date,
+            "start_time": target_start,
+            "end_time": target_end,
+            "old_date": row["booking_date"],
+            "old_time": f"{row['start_time']} - {row['end_time']}",
+        }
 
 
 # =============================================================================
