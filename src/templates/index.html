@@ -383,9 +383,15 @@
         const loader = document.getElementById("loading-bubble");
         if (loader) loader.remove();
 
+        // Kembalikan teks pengguna ke input box agar tidak hilang jika terjadi error / rate limit
+        userInput.value = message;
+
         let errMsg = "Terjadi kesalahan saat berkomunikasi dengan server asisten.";
-        if (err.name === "TypeError" && (err.message.includes("fetch") || err.message.includes("NetworkError") || err.message.includes("resource"))) {
-          errMsg = "⚠️ Gagal terhubung ke server (NetworkError).\n\nKemungkinan penyebab:\n1. Server `python run_web.py` di terminal tertutup atau sedang mati.\n2. Ekstensi AdBlock di browser Anda memblokir koneksi lokal (silakan jeda/whitelist AdBlock untuk `http://localhost:8000`).";
+        const errLower = (err.message || "").toLowerCase();
+        if (errLower.includes("429") || errLower.includes("resource_exhausted") || errLower.includes("quota") || errLower.includes("rate limit")) {
+          errMsg = "⏳ **Pemberitahuan Kuota AI (Rate Limit 429)**:\n\nKuota pemanggilan Google Gemini sedang mencapai batas gratis. Pesan Anda tetap aman di kotak input di bawah. Mohon tunggu sekitar 20–30 detik lalu klik Kirim kembali.";
+        } else if (err.name === "TypeError" && (err.message.includes("fetch") || err.message.includes("NetworkError") || err.message.includes("resource"))) {
+          errMsg = "⚠️ **Gagal terhubung ke server (NetworkError)**:\n\n1. Server `python run_web.py` di terminal tertutup atau sedang mati.\n2. Ekstensi AdBlock di browser Anda memblokir koneksi lokal (silakan jeda/whitelist AdBlock untuk `http://localhost:8000`).\n\nPesan Anda telah dikembalikan ke kotak input di bawah.";
         } else if (err.message) {
           errMsg = `⚠️ ${err.message}`;
         }

@@ -326,6 +326,7 @@ async def _process_chat(request: Request):
 
     # 2. Jika ada LLM, perkaya dengan penalaran semantik (nama acara, catatan khusus/logistik)
     #    dengan menyertakan data yang sudah terkunci agar tidak terjadi delusi / pertanyaan berulang
+    llm_warning = None
     if llm_client:
         try:
             llm_ext = llm_client.parse_user_request(
@@ -335,8 +336,15 @@ async def _process_chat(request: Request):
                 current_extraction=extraction,
             )
             extraction = _merge_extractions(extraction, llm_ext)
-        except Exception:
-            pass
+        except Exception as e:
+            err_str = str(e).lower()
+            if any(term in err_str for term in ("429", "resource_exhausted", "quota", "rate limit", "too many requests")):
+                llm_warning = (
+                    "⏳ [Pemberitahuan Kuota AI] Google Gemini sedang mencapai batas kuota (Rate Limit 429). "
+                    "Sistem tetap memproses permintaan Anda menggunakan mesin lokal (Deterministic Rule Engine)."
+                )
+            else:
+                llm_warning = f"⚠️ [Koneksi LLM] Terjadi kendala semantik AI ({e.__class__.__name__}). Beralih ke parser deterministik lokal."
 
     session["extraction"] = extraction
     session["active_options"] = active_options
@@ -354,6 +362,9 @@ async def _process_chat(request: Request):
                 bld = f" ({r['building_name']})" if r.get("building_name") else ""
                 msg += f"• [{r.get('option_number', '-')}] {r['room_name']} ({r['room_code']}){bld} — Kapasitas: {r['capacity']} orang\n"
             msg += "\nSilakan pilih nomor opsi rekomendasi di atas atau sebutkan nama ruangan alternatif."
+
+        if llm_warning:
+            msg = f"{llm_warning}\n\n{msg}"
 
         history.append({"role": "assistant", "content": msg})
         session["active_options"] = recs
@@ -392,6 +403,9 @@ async def _process_chat(request: Request):
                 clarification_msg = format_room_options_prompt(active_options, extraction.attendee_count, extraction.event_name)
             else:
                 clarification_msg = "Mohon lengkapi detail pemesanan seperti ruangan, tanggal, atau jam acara."
+
+        if llm_warning:
+            clarification_msg = f"{llm_warning}\n\n{clarification_msg}"
 
         history.append({"role": "assistant", "content": clarification_msg})
 
@@ -473,6 +487,9 @@ async def _process_chat(request: Request):
         else:
             err_text = "\n".join(f"• {e}" for e in final_state.get("errors", []))
             summary = f"Permintaan pemesanan belum dapat diproses karena:\n{err_text}"
+
+    if llm_warning:
+        summary = f"{llm_warning}\n\n{summary}"
 
     history.append({"role": "assistant", "content": summary})
 
