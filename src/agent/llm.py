@@ -20,6 +20,7 @@ for _log_name in ("google_genai", "google_genai.models", "httpx", "httpcore", "u
     logging.getLogger(_log_name).setLevel(logging.ERROR)
 
 import dotenv
+import httpx
 from google import genai
 from pydantic import BaseModel, Field
 
@@ -126,17 +127,65 @@ class LLMBookingExtraction(BaseModel):
     )
 
 
+def _clean_json_text(text: str) -> str:
+    """Membersihkan markdown code block dari output model LLM."""
+    text = text.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    elif text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    return text.strip()
+
+
 class GeminiAgentClient:
-    """Klien LLM Gemini untuk agen CampusFlow."""
+    """Klien LLM multi-provider untuk agen CampusFlow (Google Gemini & OpenRouter)."""
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        self.provider = os.getenv("LLM_PROVIDER", "gemini").lower()
+        self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY", "")
+        self.openrouter_model = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free")
+
         self.api_key = api_key or os.getenv("GEMINI_API_KEY", "")
         self.model = model or os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
-        if not self.api_key:
-            raise ValueError(
-                "GEMINI_API_KEY belum disetel! Harap masukkan API key di file .env."
-            )
-        self.client = genai.Client(api_key=self.api_key)
+
+        if self.provider == "openrouter":
+            if not self.openrouter_api_key:
+                raise ValueError("OPENROUTER_API_KEY belum disetel di file .env!")
+            self.client = None
+        else:
+            if not self.api_key and not self.openrouter_api_key:
+                raise ValueError(
+                    "GEMINI_API_KEY atau OPENROUTER_API_KEY belum disetel! Harap masukkan API key di file .env."
+                )
+            self.client = genai.Client(api_key=self.api_key) if self.api_key else None
+
+    def _call_openrouter(self, system_instruction: str, user_content: str, json_mode: bool = False) -> str:
+        """Memanggil API OpenRouter (kompatibel dengan model gratis :free)."""
+        headers = {
+            "Authorization": f"Bearer {self.openrouter_api_key}",
+            "HTTP-Referer": "https://campusflow.local",
+            "X-Title": "CampusFlow Academic Booking",
+            "Content-Type": "application/json",
+        }
+        messages = [
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": user_content},
+        ]
+        payload: Dict[str, Any] = {
+            "model": self.openrouter_model,
+            "messages": messages,
+            "temperature": 0.1 if json_mode else 0.3,
+        }
+        if json_mode:
+            payload["response_format"] = {"type": "json_object"}
+
+        with httpx.Client(timeout=35.0) as http_client:
+            resp = http_client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
 
     def parse_user_request(
         self,
@@ -204,6 +253,10 @@ ATURAN PENTING (HUMAN-IN-THE-LOOP & ANTI-HALUSINASI):
 
         full_prompt = "\n".join(contents)
 
+        if self.provider == "openrouter" or (not self.client and self.openrouter_api_key):
+            raw = self._call_openrouter(system_instruction, full_prompt, json_mode=True)
+            return LLMBookingExtraction.model_validate_json(_clean_json_text(raw))
+
         candidate_models = [self.model, "gemini-3.1-flash-lite", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"]
         # Hilangkan duplikasi sambil mempertahankan urutan
         unique_models = list(dict.fromkeys(m for m in candidate_models if m))
@@ -224,6 +277,12 @@ ATURAN PENTING (HUMAN-IN-THE-LOOP & ANTI-HALUSINASI):
                 raw_text = response.text or "{}"
                 return LLMBookingExtraction.model_validate_json(raw_text)
             except Exception as e:
+                if self.openrouter_api_key:
+                    try:
+                        raw = self._call_openrouter(system_instruction, full_prompt, json_mode=True)
+                        return LLMBookingExtraction.model_validate_json(_clean_json_text(raw))
+                    except Exception:
+                        pass
                 last_error = e
                 continue
 
@@ -247,11 +306,25 @@ Instruksi Format:
 - Jika sukses (COMPLETED / CONFIRMED): Sebutkan nomor referensi pemesanan (booking_reference), ruangan, tanggal, jam, jumlah peserta, peralatan yang telah terverifikasi fisiknya, dan departemen yang telah dinotifikasi (academic_facilities, it_support).
 - Jika ditolak / gagal: Jelaskan alasan spesifik penolakannya secara transparan berdasarkan bukti audit, tanpa menyalahkan pengguna, dan berikan saran alternatif yang konstruktif jika ada.
 """
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config={
-                "temperature": 0.3,
-            },
-        )
-        return (response.text or "").strip()
+        if self.provider == "openrouter" or (not self.client and self.openrouter_api_key):
+            try:
+                return self._call_openrouter("Anda adalah asisten resmi CampusFlow.", prompt).strip()
+            except Exception:
+                return ""
+
+        try:
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config={
+                    "temperature": 0.3,
+                },
+            )
+            return (response.text or "").strip()
+        except Exception:
+            if self.openrouter_api_key:
+                try:
+                    return self._call_openrouter("Anda adalah asisten resmi CampusFlow.", prompt).strip()
+                except Exception:
+                    pass
+            raise
