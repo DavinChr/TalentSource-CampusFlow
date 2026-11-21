@@ -20,12 +20,41 @@ async def check_room(state: AgentState) -> Dict[str, Any]:
             "errors": state["errors"] + ["Ruangan tidak ditemukan dalam permintaan."],
         }
 
-    res = await call_db("query_room_availability", {
-        "room_name": req["room_name"],
-        "booking_date": req["booking_date"],
-        "start_time": req["start_time"],
-        "end_time": req["end_time"],
-    })
+    # Validasi kelengkapan parameter esensial sebelum memanggil basis data
+    missing_params = []
+    if not req.get("booking_date"):
+        missing_params.append("tanggal pemesanan")
+    if not req.get("start_time"):
+        missing_params.append("jam mulai")
+    if not req.get("end_time"):
+        missing_params.append("jam selesai")
+
+    if missing_params:
+        return {
+            "workflow_status": "INVALID_REQUEST",
+            "errors": state["errors"] + [f"Informasi belum lengkap: {', '.join(missing_params)}."],
+        }
+
+    try:
+        res = await call_db("query_room_availability", {
+            "room_name": req["room_name"],
+            "booking_date": req["booking_date"],
+            "start_time": req["start_time"],
+            "end_time": req["end_time"],
+        })
+    except Exception as e:
+        return {
+            "workflow_status": "DATABASE_ERROR",
+            "room_availability": "ERROR",
+            "errors": state["errors"] + [f"Gagal memeriksa ketersediaan ruangan via basis data: {str(e)}"],
+            "audit_trail": add_audit(
+                state,
+                "check_room",
+                {"error": str(e)},
+                "ERROR",
+                "DATABASE_ERROR",
+            ),
+        }
 
     status = res.get("status", "ERROR")
     errors = list(state["errors"])

@@ -54,6 +54,14 @@ HTML_FILE = BASE_DIR / "src" / "templates" / "index.html"
 OUTBOX_PATH = BASE_DIR / "data" / "filesystem" / "notifications_outbox.txt"
 DB_PATH = BASE_DIR / "data" / "database" / "campusflow.db"
 
+# Pastikan basis data dan direktori operasional selalu siap
+if not DB_PATH.exists():
+    try:
+        from data.database.init_db import create_database
+        create_database()
+    except Exception as _e:
+        print(f"Warning: Gagal inisialisasi otomatis basis data: {_e}")
+
 # Inisialisasi Klien LLM
 llm_client: Optional[GeminiAgentClient] = None
 try:

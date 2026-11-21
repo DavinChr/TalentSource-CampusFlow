@@ -20,9 +20,14 @@ if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
 import uvicorn
+from data.database.init_db import DB_PATH, create_database
 from src.web import app
 
 if __name__ == "__main__":
+    if not DB_PATH.exists():
+        print("📁 Basis data belum ditemukan, menginisialisasi otomatis...")
+        create_database()
+
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8000"))
 

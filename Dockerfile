@@ -12,6 +12,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Inisialisasi basis data SQLite lokal agar selalu siap digunakan dalam kontainer
+RUN python data/database/init_db.py
+
 EXPOSE 8000
 
 CMD ["python", "run_web.py"]

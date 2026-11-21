@@ -35,6 +35,12 @@ server = MCPServer("campusflow-db")
 def get_db_connection() -> sqlite3.Connection:
     """Membuka koneksi SQLite dengan konfigurasi PRAGMA optimal."""
     if not DB_PATH.exists():
+        try:
+            from data.database.init_db import create_database
+            create_database()
+        except Exception:
+            pass
+    if not DB_PATH.exists():
         raise FileNotFoundError(f"Database tidak ditemukan di {DB_PATH}. Jalankan init_db.py terlebih dahulu.")
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
@@ -45,8 +51,10 @@ def get_db_connection() -> sqlite3.Connection:
     return conn
 
 
-def _resolve_room(conn: sqlite3.Connection, identifier: str) -> Optional[sqlite3.Row]:
+def _resolve_room(conn: sqlite3.Connection, identifier: Optional[str]) -> Optional[sqlite3.Row]:
     """Mencari ruangan berdasarkan room_code atau room_name."""
+    if not identifier:
+        return None
     clean_id = identifier.strip().lower()
     query = """
         SELECT id, building_id, room_code, room_name, room_type, capacity, floor, status
@@ -84,13 +92,18 @@ def inspect_schema() -> Dict[str, Any]:
 # Tool 2: query_room_capacity
 # =============================================================================
 @server.tool()
-def query_room_capacity(room_name: str) -> Dict[str, Any]:
+def query_room_capacity(room_name: Optional[str] = None) -> Dict[str, Any]:
     """
     Mengambil informasi kapasitas maksimum dan tipe ruangan.
     
     Args:
         room_name: Nama ruangan (misal: 'Auditorium Utama') atau kode ruangan (misal: 'AUD-01').
     """
+    if not room_name:
+        return {
+            "found": False,
+            "message": "Parameter room_name wajib diisi.",
+        }
     with get_db_connection() as conn:
         room = _resolve_room(conn, room_name)
         if not room:
@@ -115,9 +128,9 @@ def query_room_capacity(room_name: str) -> Dict[str, Any]:
 @server.tool()
 def check_booking_conflicts(
     room_id: int,
-    booking_date: str,
-    start_time: str,
-    end_time: str,
+    booking_date: Optional[str] = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
     exclude_booking_reference: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -132,6 +145,8 @@ def check_booking_conflicts(
         end_time: Waktu selesai (format: 'HH:MM', contoh '11:00').
         exclude_booking_reference: Nomor referensi reservasi yang dikecualikan (opsional).
     """
+    if not booking_date or not start_time or not end_time:
+        return {"has_conflict": False, "conflicts": []}
     with get_db_connection() as conn:
         query = """
             SELECT id, booking_reference, event_name, start_time, end_time, status
@@ -169,10 +184,10 @@ def check_booking_conflicts(
 # =============================================================================
 @server.tool()
 def query_room_availability(
-    room_name: str,
-    booking_date: str,
-    start_time: str,
-    end_time: str,
+    room_name: Optional[str] = None,
+    booking_date: Optional[str] = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
     exclude_booking_reference: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -186,6 +201,12 @@ def query_room_availability(
         end_time: Waktu selesai (HH:MM).
         exclude_booking_reference: Nomor referensi reservasi yang dikecualikan (opsional).
     """
+    if not room_name or not booking_date or not start_time or not end_time:
+        return {
+            "status": "INVALID_PARAMS",
+            "message": "Field ruangan, tanggal, jam mulai, dan jam selesai wajib diisi.",
+        }
+
     with get_db_connection() as conn:
         room = _resolve_room(conn, room_name)
         if not room:
