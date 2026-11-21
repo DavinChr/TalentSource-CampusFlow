@@ -162,7 +162,7 @@ class GeminiAgentClient:
             self.client = genai.Client(api_key=self.api_key) if self.api_key else None
 
     def _call_openrouter(self, system_instruction: str, user_content: str, json_mode: bool = False) -> str:
-        """Memanggil API OpenRouter (kompatibel dengan model gratis :free)."""
+        """Memanggil API OpenRouter (kompatibel dengan model gratis :free dan fallback otomatis)."""
         headers = {
             "Authorization": f"Bearer {self.openrouter_api_key}",
             "HTTP-Referer": "https://campusflow.local",
@@ -173,19 +173,33 @@ class GeminiAgentClient:
             {"role": "system", "content": system_instruction},
             {"role": "user", "content": user_content},
         ]
-        payload: Dict[str, Any] = {
-            "model": self.openrouter_model,
-            "messages": messages,
-            "temperature": 0.1 if json_mode else 0.3,
-        }
-        if json_mode:
-            payload["response_format"] = {"type": "json_object"}
 
-        with httpx.Client(timeout=35.0) as http_client:
-            resp = http_client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            return data["choices"][0]["message"]["content"]
+        candidate_models = [self.openrouter_model, "openrouter/free", "nvidia/nemotron-3.5-lightning:free"]
+        unique_models = list(dict.fromkeys(m for m in candidate_models if m))
+
+        last_error = None
+        for mod in unique_models:
+            payload: Dict[str, Any] = {
+                "model": mod,
+                "messages": messages,
+                "temperature": 0.1 if json_mode else 0.3,
+            }
+            if json_mode:
+                payload["response_format"] = {"type": "json_object"}
+
+            try:
+                with httpx.Client(timeout=35.0) as http_client:
+                    resp = http_client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        return data["choices"][0]["message"]["content"]
+                    else:
+                        last_error = f"HTTP {resp.status_code}: {resp.text}"
+            except Exception as e:
+                last_error = str(e)
+                continue
+
+        raise RuntimeError(f"Gagal memanggil OpenRouter setelah mencoba model {unique_models}: {last_error}")
 
     def parse_user_request(
         self,
