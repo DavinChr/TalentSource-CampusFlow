@@ -62,6 +62,13 @@ if not DB_PATH.exists():
     except Exception as _e:
         print(f"Warning: Gagal inisialisasi otomatis basis data: {_e}")
 
+# Selaraskan otomatis data ruangan dari Catatan/DATA_RUANGAN_UNPAR.txt ke basis data
+try:
+    from src.agent.unpar_sync import sync_unpar_rooms_to_db
+    sync_unpar_rooms_to_db()
+except Exception as _sync_err:
+    print(f"Warning: Sinkronisasi data ruangan UNPAR lewati: {_sync_err}")
+
 # Inisialisasi Klien LLM
 llm_client: Optional[GeminiAgentClient] = None
 try:

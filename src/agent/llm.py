@@ -48,6 +48,15 @@ KNOWN_ROOMS = {
     "G2-SEM": "Ruang Seminar B. Arief Sidharta (Kapasitas: 60 orang, Gedung 2 FH)",
 }
 
+# Sinkronkan kamus ruangan dinamis jika berkas teks UNPAR ada perubahan / ruangan baru
+try:
+    from src.agent.unpar_sync import load_dynamic_known_rooms
+    _dyn_rooms = load_dynamic_known_rooms()
+    if _dyn_rooms:
+        KNOWN_ROOMS.update(_dyn_rooms)
+except Exception:
+    pass
+
 # Daftar kategori peralatan resmi
 KNOWN_EQUIPMENT = [
     "projector",
