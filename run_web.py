@@ -32,11 +32,12 @@ if __name__ == "__main__":
     print("💡 Tekan Ctrl+C di terminal ini untuk mematikan server.")
     print("=" * 65 + "\n")
 
-    # Buka browser secara otomatis jika di lingkungan desktop lokal (bukan cloud container)
-    if os.getenv("RENDER") is None and os.getenv("SPACE_ID") is None:
-        try:
-            webbrowser.open(f"http://localhost:{port}")
-        except Exception:
-            pass
+    # Buka browser secara otomatis hanya jika di lingkungan desktop lokal (bukan cloud container seperti Docker/Northflank/Render)
+    if os.getenv("RENDER") is None and os.getenv("SPACE_ID") is None and os.getenv("NORTHFLANK") is None and os.getenv("KUBERNETES_SERVICE_HOST") is None:
+        if sys.platform.startswith("win"):
+            try:
+                webbrowser.open(f"http://localhost:{port}")
+            except Exception:
+                pass
 
     uvicorn.run(app, host=host, port=port, log_level="info")
