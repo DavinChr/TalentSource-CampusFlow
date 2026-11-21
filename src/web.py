@@ -31,7 +31,7 @@ import dotenv
 dotenv.load_dotenv(dotenv_path=BASE_DIR / ".env")
 
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse, FileResponse
+from starlette.responses import JSONResponse, FileResponse, Response
 from starlette.routing import Route
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -116,9 +116,16 @@ async def handle_index(request: Request):
     return FileResponse(HTML_FILE)
 
 
-async def handle_chat(request: Request):
-    """Endpoint percakapan multi-turn dan eksekusi LangGraph."""
-    body = await request.json()
+async def handle_favicon(request: Request):
+    """Mencegah log error 404 pada favicon."""
+    return Response(status_code=204)
+
+
+async def _process_chat(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
     user_msg = (body.get("message") or "").strip()
     session_id = body.get("session_id") or "default"
     custom_today = body.get("today")
@@ -502,6 +509,25 @@ async def handle_chat(request: Request):
     })
 
 
+async def handle_chat(request: Request):
+    """Endpoint percakapan multi-turn dan eksekusi LangGraph dengan perlindungan unhandled exception."""
+    try:
+        return await _process_chat(request)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse({
+            "status": "SERVER_ERROR",
+            "reply": f"⚠️ Terjadi kendala teknis pada server asisten: {str(e)}",
+            "booking_reference": None,
+            "booking": {},
+            "audit_trail": [],
+            "notifications": [],
+            "equipment_results": [],
+            "errors": [str(e)],
+        }, status_code=200)
+
+
 async def handle_reset(request: Request):
     """Mereset riwayat sesi percakapan."""
     body = await request.json() if request.headers.get("content-type") == "application/json" else {}
@@ -575,8 +601,10 @@ async def handle_get_rooms(request: Request):
 
 routes = [
     Route("/", handle_index, methods=["GET"]),
+    Route("/favicon.ico", handle_favicon, methods=["GET"]),
     Route("/api/chat", handle_chat, methods=["POST"]),
     Route("/api/reset", handle_reset, methods=["POST"]),
+    Route("/api/outbox", handle_get_notifications, methods=["GET"]),
     Route("/api/notifications", handle_get_notifications, methods=["GET"]),
     Route("/api/rooms", handle_get_rooms, methods=["GET"]),
 ]

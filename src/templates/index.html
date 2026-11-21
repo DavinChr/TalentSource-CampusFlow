@@ -352,6 +352,12 @@
             today: refDateInput.value,
           }),
         });
+
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`Server merespons status ${res.status}: ${errBody.slice(0, 120)}`);
+        }
+
         const data = await res.json();
         const loader = document.getElementById("loading-bubble");
         if (loader) loader.remove();
@@ -373,9 +379,17 @@
         }
 
       } catch (err) {
+        console.error("Chat error detail:", err);
         const loader = document.getElementById("loading-bubble");
         if (loader) loader.remove();
-        appendMessage("assistant", "Terjadi kesalahan saat berkomunikasi dengan server asisten.");
+
+        let errMsg = "Terjadi kesalahan saat berkomunikasi dengan server asisten.";
+        if (err.name === "TypeError" && (err.message.includes("fetch") || err.message.includes("NetworkError") || err.message.includes("resource"))) {
+          errMsg = "⚠️ Gagal terhubung ke server (NetworkError).\n\nKemungkinan penyebab:\n1. Server `python run_web.py` di terminal tertutup atau sedang mati.\n2. Ekstensi AdBlock di browser Anda memblokir koneksi lokal (silakan jeda/whitelist AdBlock untuk `http://localhost:8000`).";
+        } else if (err.message) {
+          errMsg = `⚠️ ${err.message}`;
+        }
+        appendMessage("assistant", errMsg);
       } finally {
         btnSend.disabled = false;
         userInput.focus();
@@ -494,10 +508,11 @@
       lucide.createIcons();
     }
 
-    // Load physical outbox file
+    // Load physical outbox file (menggunakan endpoint /api/outbox agar tidak dicegat AdBlock)
     async function loadOutboxHistory() {
       try {
-        const res = await fetch("/api/notifications");
+        const res = await fetch("/api/outbox");
+        if (!res.ok) return;
         const data = await res.json();
         outboxHistoryList.innerHTML = "";
         if (!data.notifications || data.notifications.length === 0) {
@@ -518,7 +533,7 @@
           outboxHistoryList.appendChild(div);
         });
       } catch (err) {
-        console.error("Gagal memuat outbox:", err);
+        console.warn("Outbox notice (mungkin dicegat oleh browser extension / adblock):", err);
       }
     }
 
