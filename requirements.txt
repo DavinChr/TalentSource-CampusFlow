@@ -6,3 +6,5 @@ python-dotenv>=1.0.0
 google-genai>=0.1.0
 langgraph>=1.2.0
 langchain-core>=1.4.0
+starlette>=0.38.0
+uvicorn>=0.30.0

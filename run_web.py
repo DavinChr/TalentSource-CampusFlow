@@ -9,6 +9,7 @@ Lalu buka peramban (browser) di:
     http://localhost:8000
 """
 
+import os
 import sys
 import webbrowser
 from pathlib import Path
@@ -22,16 +23,20 @@ import uvicorn
 from src.web import app
 
 if __name__ == "__main__":
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+
     print("\n" + "=" * 65)
     print("🏛️  CampusFlow — Academic Facility & Event Coordinator")
-    print("🌐 Web UI Server berjalan di: http://localhost:8000")
+    print(f"🌐 Web UI Server berjalan di: http://{host}:{port}")
     print("💡 Tekan Ctrl+C di terminal ini untuk mematikan server.")
     print("=" * 65 + "\n")
 
-    # Buka browser secara otomatis jika memungkinkan
-    try:
-        webbrowser.open("http://localhost:8000")
-    except Exception:
-        pass
+    # Buka browser secara otomatis jika di lingkungan desktop lokal (bukan cloud container)
+    if os.getenv("RENDER") is None and os.getenv("SPACE_ID") is None:
+        try:
+            webbrowser.open(f"http://localhost:{port}")
+        except Exception:
+            pass
 
-    uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
+    uvicorn.run(app, host=host, port=port, log_level="info")
