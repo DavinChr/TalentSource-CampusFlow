@@ -375,7 +375,9 @@ async def _process_chat(request: Request):
 
         history.append({"role": "assistant", "content": msg})
         session["active_options"] = recs
-        session["extraction"] = None  # Reset karena permintaan invalid
+        if extraction:
+            extraction.room_name = None  # Kosongkan ruangan agar digantikan oleh rekomendasi yang dipilih
+        session["extraction"] = extraction
 
         return JSONResponse({
             "status": early_check["status"],

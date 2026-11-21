@@ -45,7 +45,7 @@
         <span class="text-xs text-slate-400">Tanggal Acuan:</span>
         <input type="date" id="ref-date" class="bg-transparent text-xs font-semibold text-slate-700 focus:outline-none">
       </div>
-      <button id="btn-reset" class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition">
+      <button type="button" id="btn-reset" class="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition">
         <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
         <span>Reset Sesi</span>
       </button>
@@ -95,15 +95,15 @@
       <!-- Quick Prompts Chips -->
       <div class="px-5 py-2.5 bg-slate-50 border-t border-slate-100 flex items-center space-x-2 overflow-x-auto text-xs">
         <span class="text-slate-400 font-medium whitespace-nowrap">Contoh cepat:</span>
-        <button class="quick-chip whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-slate-200 hover:border-indigo-400 hover:text-indigo-600 transition text-slate-600"
+        <button type="button" class="quick-chip whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-slate-200 hover:border-indigo-400 hover:text-indigo-600 transition text-slate-600"
                 data-text="Mau pinjam ruang mulfung PPAG buat yudisium 200 orang tanggal 8 Januari 2027 jam 08:00 sampai 11:00, butuh proyektor, sound system, mic, sama prasmanan">
           🎓 Yudisium di PPAG-203 (200 org, Add-on)
         </button>
-        <button class="quick-chip whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-slate-200 hover:border-indigo-400 hover:text-indigo-600 transition text-slate-600"
+        <button type="button" class="quick-chip whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-slate-200 hover:border-indigo-400 hover:text-indigo-600 transition text-slate-600"
                 data-text="Pesan Auditorium Utama untuk workshop AI 100 orang pada 23 September 2026 jam 13:00 sampai 15:00, pastikan proyektor berfungsi">
           🏛️ Workshop di AUD-01 (TC-01)
         </button>
-        <button class="quick-chip whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-slate-200 hover:border-indigo-400 hover:text-indigo-600 transition text-slate-600"
+        <button type="button" class="quick-chip whitespace-nowrap px-2.5 py-1 rounded-full bg-white border border-slate-200 hover:border-indigo-400 hover:text-indigo-600 transition text-slate-600"
                 data-text="Pesan Ruang Kuliah 201 untuk kuliah tamu 40 orang pada 29 September 2026 jam 10:00 sampai 12:00 dengan smartboard">
           ❌ Uji TC-07 (Smartboard Ditolak)
         </button>
@@ -129,16 +129,16 @@
       
       <!-- Tabs Header -->
       <div class="flex border-b border-slate-200 bg-slate-50/50 px-2 pt-2 text-xs font-semibold text-slate-600">
-        <button id="tab-btn-notifs" class="tab-btn active px-4 py-2.5 border-b-2 border-indigo-600 text-indigo-700 flex items-center space-x-1.5 transition">
+        <button type="button" id="tab-btn-notifs" class="tab-btn active px-4 py-2.5 border-b-2 border-indigo-600 text-indigo-700 flex items-center space-x-1.5 transition">
           <i data-lucide="bell" class="w-3.5 h-3.5"></i>
           <span>Notifikasi Departemen Lain</span>
           <span id="notif-count-badge" class="ml-1 px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-700 text-[10px]">0</span>
         </button>
-        <button id="tab-btn-audit" class="tab-btn px-4 py-2.5 border-b-2 border-transparent hover:text-slate-900 flex items-center space-x-1.5 transition">
+        <button type="button" id="tab-btn-audit" class="tab-btn px-4 py-2.5 border-b-2 border-transparent hover:text-slate-900 flex items-center space-x-1.5 transition">
           <i data-lucide="git-commit" class="w-3.5 h-3.5"></i>
           <span>Jejak Audit Alur Kerja</span>
         </button>
-        <button id="tab-btn-rooms" class="tab-btn px-4 py-2.5 border-b-2 border-transparent hover:text-slate-900 flex items-center space-x-1.5 transition">
+        <button type="button" id="tab-btn-rooms" class="tab-btn px-4 py-2.5 border-b-2 border-transparent hover:text-slate-900 flex items-center space-x-1.5 transition">
           <i data-lucide="door-open" class="w-3.5 h-3.5"></i>
           <span>Katalog Ruangan</span>
         </button>
@@ -152,7 +152,7 @@
           
           <div class="flex items-center justify-between text-xs text-slate-500">
             <span>Disposisi otomatis setelah validasi transaksional lolos:</span>
-            <button id="btn-refresh-outbox" class="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center space-x-1">
+            <button type="button" id="btn-refresh-outbox" class="text-indigo-600 hover:text-indigo-700 font-semibold flex items-center space-x-1">
               <i data-lucide="refresh-cw" class="w-3 h-3"></i>
               <span>Sinkron Outbox</span>
             </button>
@@ -307,11 +307,13 @@
       optionPills.innerHTML = "";
       options.forEach(opt => {
         const btn = document.createElement("button");
+        btn.type = "button";
         btn.className = "px-3 py-1 bg-white border border-indigo-200 hover:bg-indigo-600 hover:text-white text-indigo-700 text-xs font-semibold rounded-lg shadow-2xs transition flex items-center space-x-1";
         btn.innerHTML = `<span>[${opt.number || opt.option_number || '-'}] ${opt.room_name} (${opt.room_code})</span><span class="opacity-75">· ${opt.capacity} pax</span>`;
-        btn.onclick = () => {
-          userInput.value = opt.room_code;
-          chatForm.dispatchEvent(new Event("submit"));
+        btn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          submitChatMessage(opt.room_code || (opt.option_number ? opt.option_number.toString() : ""));
         };
         optionPills.appendChild(btn);
       });
@@ -319,10 +321,9 @@
       lucide.createIcons();
     }
 
-    // Submit handler
-    chatForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const message = userInput.value.trim();
+    // Fungsi pengiriman pesan chat utama
+    async function submitChatMessage(rawMsg) {
+      const message = (rawMsg || "").trim();
       if (!message) return;
 
       appendMessage("user", message);
@@ -401,7 +402,7 @@
         let errMsg = "Terjadi kesalahan saat berkomunikasi dengan server asisten.";
         const errLower = (err.message || "").toLowerCase();
         if (errLower.includes("429") || errLower.includes("resource_exhausted") || errLower.includes("quota") || errLower.includes("rate limit")) {
-          errMsg = "⏳ **Pemberitahuan Kuota AI (Rate Limit 429)**:\n\nKuota pemanggilan Google Gemini sedang mencapai batas gratis. Pesan Anda tetap aman di kotak input di bawah. Mohon tunggu sekitar 20–30 detik lalu klik Kirim kembali.";
+          errMsg = "⏳ **Pemberitahuan Kuota AI (Rate Limit 429)**:\n\nKuota pemanggilan AI sedang mencapai batas gratis. Pesan Anda tetap aman di kotak input di bawah. Mohon tunggu sekitar 20–30 detik lalu klik Kirim kembali.";
         } else if (err.name === "TypeError" && (err.message.includes("fetch") || err.message.includes("NetworkError") || err.message.includes("resource"))) {
           errMsg = "⚠️ **Gagal terhubung ke server (NetworkError)**:\n\n1. Server `python run_web.py` di terminal tertutup atau sedang mati.\n2. Ekstensi AdBlock di browser Anda memblokir koneksi lokal (silakan jeda/whitelist AdBlock untuk `http://localhost:8000`).\n\nPesan Anda telah dikembalikan ke kotak input di bawah.";
         } else if (err.message) {
@@ -413,6 +414,12 @@
         userInput.focus();
         loadOutboxHistory();
       }
+    }
+
+    // Submit handler form
+    chatForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      submitChatMessage(userInput.value);
     });
 
     // Render department notification cards
@@ -609,9 +616,10 @@
 
     // Quick chip click
     document.querySelectorAll(".quick-chip").forEach(chip => {
-      chip.addEventListener("click", () => {
-        userInput.value = chip.getAttribute("data-text");
-        chatForm.dispatchEvent(new Event("submit"));
+      chip.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        submitChatMessage(chip.getAttribute("data-text"));
       });
     });
 
