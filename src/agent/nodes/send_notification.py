@@ -24,6 +24,12 @@ async def send_notification(state: AgentState) -> Dict[str, Any]:
     errors = list(state["errors"])
     all_success = True
 
+    eq_details = [
+        f"{eq.get('equipment_name')} ({eq.get('equipment_code')}) {'[Add-on Portabel]' if eq.get('is_add_on') else '[Fasilitas Ruangan]'}"
+        for eq in (state.get("equipment_results") or [])
+    ]
+    required_eq = req.get("required_equipment") or []
+
     # 1. Notifikasi ke Fasilitas Akademik
     fac_payload = {
         "booking_reference": booking_ref,
@@ -34,6 +40,8 @@ async def send_notification(state: AgentState) -> Dict[str, Any]:
         "attendee_count": req["attendee_count"],
         "requester": state["requester"],
         "notes": req.get("notes"),
+        "equipment": required_eq,
+        "equipment_details": eq_details,
     }
     fac_res = await call_notification("send_department_notification", {
         "department_key": "academic_facilities",
@@ -58,6 +66,7 @@ async def send_notification(state: AgentState) -> Dict[str, Any]:
             "booking_reference": booking_ref,
             "room_name": req["room_name"],
             "equipment": req["required_equipment"],
+            "equipment_details": eq_details,
             "date": req["booking_date"],
             "time": f"{req['start_time']} - {req['end_time']}",
             "notes": req.get("notes"),
