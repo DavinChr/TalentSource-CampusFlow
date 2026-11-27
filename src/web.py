@@ -132,6 +132,63 @@ def _is_amendment_request(user_msg: str, last_booking: Optional[Dict[str, Any]])
     return False, ""
 
 
+def _is_availability_inquiry(user_msg: str) -> bool:
+    """Mendeteksi pertanyaan umum untuk melihat daftar ruangan yang tersedia."""
+    msg_l = user_msg.lower()
+    inquiry_cues = [
+        "ruangan apa", "ruang apa", "ruangan tersedia", "ruang tersedia",
+        "ruangan yang tersedia", "ruang yang tersedia", "ruangan kosong",
+        "ruang kosong", "daftar ruangan", "list ruangan", "cek ruangan",
+        "ada ruangan apa", "ada ruang apa",
+    ]
+    return any(cue in msg_l for cue in inquiry_cues)
+
+
+def _list_available_rooms(
+    attendee_count: Optional[int] = None,
+    booking_date: Optional[str] = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Mengambil daftar ruangan aktif yang tersedia (dan bebas bentrok jika tanggal & jam diisi)."""
+    if not DB_PATH.exists():
+        return []
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    try:
+        params: List[Any] = []
+        conflict_clause = ""
+        if booking_date and start_time and end_time:
+            conflict_clause = """
+              AND r.id NOT IN (
+                  SELECT bk.room_id FROM bookings bk
+                  WHERE bk.booking_date = ? AND bk.status = 'CONFIRMED'
+                    AND bk.start_time < ? AND bk.end_time > ?
+              )
+            """
+            params.extend([booking_date, end_time, start_time])
+        cap_clause = ""
+        if attendee_count:
+            cap_clause = " AND r.capacity >= ?"
+            params.append(attendee_count)
+        rows = conn.execute(f"""
+            SELECT r.room_code, r.room_name, r.room_type, r.capacity,
+                   b.code as building_code, b.name as building_name
+            FROM rooms r
+            JOIN buildings b ON b.id = r.building_id
+            WHERE r.status = 'ACTIVE' AND b.code IN ('PPAG', 'G0', 'G9', 'G2')
+            {conflict_clause}
+            {cap_clause}
+            ORDER BY r.capacity ASC
+        """, params).fetchall()
+        rooms = [dict(r) for r in rows]
+        for idx, r in enumerate(rooms, start=1):
+            r["option_number"] = idx
+        return rooms
+    finally:
+        conn.close()
+
+
 async def handle_index(request: Request):
     """Menyajikan halaman UI utama dengan header anti-cache agar peramban selalu memuat JS terbaru."""
     if not HTML_FILE.exists():
@@ -345,6 +402,46 @@ async def _process_chat(request: Request):
         active_options = []
         session["active_options"] = []
 
+    # 0b. Pertanyaan Ketersediaan Ruangan ("ruangan apa saja yang tersedia?", "cek ruangan tersedia", dll.)
+    if not extraction and _is_availability_inquiry(user_msg):
+        det_q, _ = _deterministic_extract(user_msg, today)
+        if not det_q.room_name:
+            avail_rooms = _list_available_rooms(
+                attendee_count=det_q.attendee_count,
+                booking_date=det_q.booking_date,
+                start_time=det_q.start_time,
+                end_time=det_q.end_time,
+            )
+            if avail_rooms:
+                if det_q.booking_date and det_q.start_time and det_q.end_time:
+                    header = f"Berikut daftar **ruangan yang tersedia** pada **{det_q.booking_date}** pukul **{det_q.start_time} - {det_q.end_time} WIB**"
+                elif det_q.booking_date:
+                    header = f"Berikut daftar **ruangan aktif yang tersedia** (acuan tanggal {det_q.booking_date})"
+                else:
+                    header = "Berikut daftar **ruangan aktif yang tersedia** di kampus"
+                if det_q.attendee_count:
+                    header += f" untuk kapasitas minimal **{det_q.attendee_count} orang**"
+                lines = [header + ":\n"]
+                for r in avail_rooms:
+                    lines.append(f"• [{r['option_number']}] **{r['room_name']}** (`{r['room_code']}`) — {r['building_name']} | Kapasitas: {r['capacity']} orang")
+                lines.append("\nSilakan pilih ruangan di atas beserta **tanggal, jam mulai–jam selesai, dan nama acara** jika ingin melanjutkan pemesanan.")
+                reply_msg = "\n".join(lines)
+            else:
+                reply_msg = "Mohon maaf, tidak ditemukan ruangan yang tersedia sesuai kriteria kapasitas/jadwal tersebut."
+
+            history.append({"role": "assistant", "content": reply_msg})
+            session["active_options"] = avail_rooms[:6]
+            return JSONResponse({
+                "status": "AVAILABLE_ROOMS",
+                "reply": reply_msg,
+                "options": avail_rooms[:6],
+                "booking": det_q.model_dump(),
+                "audit_trail": [],
+                "notifications": [],
+                "equipment_results": [],
+                "errors": [],
+            })
+
     # 1. Jalankan Deterministic Parser terlebih dahulu untuk mengunci pola pasti (jam, tanggal, alias, alat)
     det_ext, active_options = _deterministic_extract(
         user_msg=user_msg,
@@ -425,7 +522,13 @@ async def _process_chat(request: Request):
         # Jika belum ada ruangan, buat rekomendasi cerdas
         if not extraction.room_name:
             target_pax = extraction.attendee_count
-            active_options = find_room_recommendations(attendee_count=target_pax, hint_text=user_msg)
+            active_options = find_room_recommendations(
+                attendee_count=target_pax,
+                hint_text=user_msg,
+                booking_date=extraction.booking_date,
+                start_time=extraction.start_time,
+                end_time=extraction.end_time,
+            )
             session["active_options"] = active_options
         else:
             active_options = []
@@ -509,6 +612,7 @@ async def _process_chat(request: Request):
 
             summary = (
                 f"Pemesanan fasilitas berhasil dikonfirmasi!\n"
+                f"• Status Ketersediaan: Ruangan TERSEDIA (bebas bentrok jadwal & kapasitas mencukupi)\n"
                 f"• Nomor Reservasi: {ref}\n"
                 f"• Ruangan: {extraction.room_name}\n"
                 f"• Acara: {extraction.event_name}\n"

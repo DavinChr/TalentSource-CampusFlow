@@ -20,8 +20,11 @@ def find_room_recommendations(
     attendee_count: Optional[int] = None,
     hint_text: str = "",
     limit: int = 4,
+    booking_date: Optional[str] = None,
+    start_time: Optional[str] = None,
+    end_time: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Mencari rekomendasi ruangan aktif yang paling cocok dari basis data."""
+    """Mencari rekomendasi ruangan aktif yang paling cocok (dan bebas bentrok jadwal) dari basis data."""
     if not DB_PATH.exists():
         return []
 
@@ -46,15 +49,33 @@ def find_room_recommendations(
     conn.row_factory = sqlite3.Row
     try:
         # Hanya ambil ruangan resmi UNPAR (Gedung PPAG, G0, G9, G2)
-        query = """
-            SELECT r.id, r.room_code, r.room_name, r.room_type, r.capacity, r.floor,
-                   b.name as building_name, b.code as building_code
-            FROM rooms r
-            JOIN buildings b ON b.id = r.building_id
-            WHERE r.status = 'ACTIVE' AND b.code IN ('PPAG', 'G0', 'G9', 'G2')
-            ORDER BY r.capacity ASC
-        """
-        rows = conn.execute(query).fetchall()
+        if booking_date and start_time and end_time:
+            query = """
+                SELECT r.id, r.room_code, r.room_name, r.room_type, r.capacity, r.floor,
+                       b.name as building_name, b.code as building_code
+                FROM rooms r
+                JOIN buildings b ON b.id = r.building_id
+                WHERE r.status = 'ACTIVE' AND b.code IN ('PPAG', 'G0', 'G9', 'G2')
+                  AND r.id NOT IN (
+                      SELECT bk.room_id FROM bookings bk
+                      WHERE bk.booking_date = ?
+                        AND bk.status = 'CONFIRMED'
+                        AND bk.start_time < ?
+                        AND bk.end_time > ?
+                  )
+                ORDER BY r.capacity ASC
+            """
+            rows = conn.execute(query, (booking_date, end_time, start_time)).fetchall()
+        else:
+            query = """
+                SELECT r.id, r.room_code, r.room_name, r.room_type, r.capacity, r.floor,
+                       b.name as building_name, b.code as building_code
+                FROM rooms r
+                JOIN buildings b ON b.id = r.building_id
+                WHERE r.status = 'ACTIVE' AND b.code IN ('PPAG', 'G0', 'G9', 'G2')
+                ORDER BY r.capacity ASC
+            """
+            rows = conn.execute(query).fetchall()
     finally:
         conn.close()
 

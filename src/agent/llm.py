@@ -327,7 +327,7 @@ Instruksi Asli Pengguna:
 "{user_message}"
 
 Instruksi Format:
-- Jika sukses (COMPLETED / CONFIRMED): Sebutkan nomor referensi pemesanan (booking_reference), ruangan, tanggal, jam, jumlah peserta, peralatan yang telah terverifikasi fisiknya, dan departemen yang telah dinotifikasi (academic_facilities, it_support).
+- Jika sukses (COMPLETED / CONFIRMED): Sebutkan secara eksplisit bahwa ruangan berstatus **TERSEDIA** (bebas bentrok jadwal & kapasitas mencukupi), lalu cantumkan nomor referensi pemesanan (booking_reference), ruangan, tanggal, jam, jumlah peserta, peralatan yang telah terverifikasi fisiknya, dan departemen yang telah dinotifikasi (academic_facilities, it_support).
 - Jika ditolak / gagal: Jelaskan alasan spesifik penolakannya secara transparan berdasarkan bukti audit, tanpa menyalahkan pengguna, dan berikan saran alternatif yang konstruktif jika ada.
 """
         if self.provider == "openrouter" or (not self.client and self.openrouter_api_key):
