@@ -46,6 +46,15 @@ KNOWN_ROOMS = {
     "G9-LAB3": "Laboratorium Komputer Komputasi Lanjut 3 (Kapasitas: 60 orang, Gedung 9)",
     "G2-MC": "Ruang Peradilan Semu / Moot Court (Kapasitas: 50 orang, Gedung 2 FH)",
     "G2-SEM": "Ruang Seminar B. Arief Sidharta (Kapasitas: 60 orang, Gedung 2 FH)",
+    # Baseline Campus Rooms (terdaftar di database untuk skenario uji)
+    "AUD-01": "Auditorium Utama (Kapasitas: 300 orang)",
+    "SR-101": "Ruang Seminar 101 (Kapasitas: 50 orang)",
+    "SR-102": "Ruang Seminar 102 (Kapasitas: 50 orang)",
+    "CR-301": "Ruang Konferensi Eksekutif (Kapasitas: 20 orang)",
+    "LH-201": "Ruang Kuliah 201 (Kapasitas: 80 orang)",
+    "LH-202": "Ruang Kuliah 202 (Kapasitas: 120 orang)",
+    "LAB-401": "Laboratorium Komputer (Kapasitas: 40 orang, UNDER_RENOVATION)",
+    "SR-ENG1": "Ruang Seminar Teknik (Kapasitas: 30 orang)",
 }
 
 # Sinkronkan kamus ruangan dinamis jika berkas teks UNPAR ada perubahan / ruangan baru

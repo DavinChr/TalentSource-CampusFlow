@@ -98,6 +98,19 @@ def _is_amendment_request(user_msg: str, last_booking: Optional[Dict[str, Any]])
 
     msg_l = user_msg.lower()
 
+    # 0. Jika pengguna menyebut ruangan baru/berbeda atau niat booking baru, jangan anggap sebagai revisi booking lama
+    new_room_cues = [
+        "sekarang pesan", "sekarang mau pinjam", "mau booking ruangan lain",
+        "ruangan lain", "ruang lain", "booking baru", "pesan lagi", "pinjam lagi",
+        "pinjam juga", "booking juga", "pesan juga",
+    ]
+    if any(nrc in msg_l for nrc in new_room_cues):
+        return False, ""
+
+    det_check, _ = _deterministic_extract(user_msg, date.today().isoformat())
+    if det_check.room_name and last_booking.get("room_code") and det_check.room_name.upper() != last_booking["room_code"].upper():
+        return False, ""
+
     # 1. Deteksi ralat waktu/jadwal
     reschedule_cues = [
         "ralat jam", "ganti jam", "ubah jam", "geser jam", "ganti tanggal",
@@ -114,12 +127,7 @@ def _is_amendment_request(user_msg: str, last_booking: Optional[Dict[str, Any]])
         "jangan lupa", "kasih juga", "pasang juga", "minta tolong", "tambahi", "sofa",
     ]
     if any(cue in msg_l for cue in note_cues):
-        new_room_cues = [
-            "sekarang pesan", "sekarang mau pinjam", "mau booking ruangan lain",
-            "booking baru", "pesan lagi", "pinjam lagi",
-        ]
-        if not any(nrc in msg_l for nrc in new_room_cues):
-            return True, "notes"
+        return True, "notes"
 
     return False, ""
 
@@ -357,6 +365,8 @@ async def _process_chat(request: Request):
                 conversation_history=history[:-1],
                 current_extraction=extraction,
             )
+            if det_ext.room_name:
+                llm_ext.room_name = det_ext.room_name
             extraction = _merge_extractions(extraction, llm_ext)
         except Exception as e:
             err_str = str(e).lower()
